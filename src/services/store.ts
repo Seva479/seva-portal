@@ -1072,6 +1072,16 @@ export class SevaStore {
     return updatedApp;
   }
 
+  static deleteApplication(appId: string): boolean {
+    const list = this.getApplications();
+    const filtered = list.filter((a) => a.id !== appId);
+    if (filtered.length !== list.length) {
+      this.save(STORAGE_KEYS.APPLICATIONS, filtered);
+      return true;
+    }
+    return false;
+  }
+
   static saveApplicationReview(appId: string, review: ApplicationReview, updatedPriority?: Application['priority']): Application | null {
     const list = this.getApplications();
     const index = list.findIndex((a) => a.id === appId);

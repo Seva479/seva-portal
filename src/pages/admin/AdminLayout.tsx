@@ -322,6 +322,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onExitAdmin }) => {
           onScheduleMeeting={handleScheduleMeetingFromApp}
           onComposeEmail={handleComposeEmailFromApp}
           onConvertToProject={handleConvertToProjectFromApp}
+          onDeleteApp={() => {
+            setSelectedApp(null);
+            refreshAll();
+          }}
         />
       )}
 

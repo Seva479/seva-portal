@@ -26,6 +26,7 @@ import { EmailManager } from './EmailManager';
 import { ProjectsTracker } from './ProjectsTracker';
 import { ContentManager } from './ContentManager';
 import { DatabaseSchemaModal } from './DatabaseSchemaModal';
+import { ExcelImportModal } from './ExcelImportModal';
 
 interface AdminLayoutProps {
   onExitAdmin: () => void;
@@ -46,6 +47,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onExitAdmin }) => {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [preselectedAppForMeeting, setPreselectedAppForMeeting] = useState<Application | null>(null);
   const [preselectedAppForEmail, setPreselectedAppForEmail] = useState<Application | null>(null);
+  const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
 
   const refreshAll = () => {
     setApplications(SevaStore.getApplications());
@@ -267,6 +269,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onExitAdmin }) => {
             meetings={meetings}
             onSelectApplication={(app) => setSelectedApp(app)}
             onNavigateTab={(tab) => setActiveTab(tab as any)}
+            onOpenExcelImport={() => setIsExcelModalOpen(true)}
           />
         )}
 
@@ -274,6 +277,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onExitAdmin }) => {
           <ApplicationsManager
             applications={applications}
             onSelectApplication={(app) => setSelectedApp(app)}
+            onRefresh={refreshAll}
           />
         )}
 
@@ -320,6 +324,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onExitAdmin }) => {
           onConvertToProject={handleConvertToProjectFromApp}
         />
       )}
+
+      {/* Global Excel / CSV Bulk Import Modal */}
+      <ExcelImportModal
+        isOpen={isExcelModalOpen}
+        onClose={() => setIsExcelModalOpen(false)}
+        onImportSuccess={() => {
+          refreshAll();
+        }}
+      />
     </div>
   );
 };

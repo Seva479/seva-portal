@@ -937,6 +937,106 @@ export class SevaStore {
     return application;
   }
 
+  static bulkImportApplications(importedList: Partial<Application>[]): { successCount: number; importedApps: Application[] } {
+    const list = this.getApplications();
+    const now = new Date().toISOString();
+    let counter = list.length;
+    const newApps: Application[] = [];
+
+    for (const item of importedList) {
+      counter += 1;
+      const formattedId = item.id && item.id.startsWith('SEVA-') ? item.id : `SEVA-2026-${String(counter).padStart(4, '0')}`;
+
+      const rawAreas = item.key_areas_of_work;
+      const parsedAreas = Array.isArray(rawAreas)
+        ? rawAreas
+        : typeof rawAreas === 'string'
+        ? (rawAreas as string).split(',').map((s) => s.trim()).filter(Boolean)
+        : ['Agriculture', 'Livelihoods'];
+
+      const rawSupport = item.support_type_seeking;
+      const parsedSupport = Array.isArray(rawSupport)
+        ? rawSupport
+        : typeof rawSupport === 'string'
+        ? (rawSupport as string).split(',').map((s) => s.trim()).filter(Boolean)
+        : [item.first_priority_support || 'MIS and Digital Data Management'];
+
+      const rawTools = item.current_digital_tools;
+      const parsedTools = Array.isArray(rawTools)
+        ? rawTools
+        : typeof rawTools === 'string'
+        ? (rawTools as string).split(',').map((s) => s.trim()).filter(Boolean)
+        : ['Excel/Spreadsheets', 'WhatsApp'];
+
+      const app: Application = {
+        id: formattedId,
+        created_at: item.created_at || now,
+        updated_at: now,
+        status: item.status || 'New Application',
+        priority: item.priority || 'Medium',
+        assigned_reviewer_id: item.assigned_reviewer_id || '',
+        assigned_reviewer_name: item.assigned_reviewer_name || '',
+
+        name_of_organization: item.name_of_organization || 'Unnamed Organisation',
+        type_of_organization: item.type_of_organization || 'Trust',
+        year_of_establishment: Number(item.year_of_establishment) || new Date().getFullYear(),
+        registration_number: item.registration_number || '',
+        state: item.state || 'Maharashtra',
+        district: item.district || '',
+        organisation_address: item.organisation_address || '',
+        organisation_website: item.organisation_website || '',
+        organisation_email: item.organisation_email || '',
+
+        contact_person_name: item.contact_person_name || '',
+        designation: item.designation || 'Coordinator',
+        contact_number: String(item.contact_number || ''),
+
+        brief_description: item.brief_description || '',
+        key_areas_of_work: parsedAreas.length > 0 ? parsedAreas : ['Rural Development'],
+        villages_covered: Number(item.villages_covered) || 0,
+        geographical_area_of_operation: item.geographical_area_of_operation || '',
+        annual_beneficiaries_reached: Number(item.annual_beneficiaries_reached) || 0,
+        primary_beneficiaries: item.primary_beneficiaries || 'Rural Communities',
+
+        has_website: Boolean(item.has_website),
+        has_mis_system: Boolean(item.has_mis_system),
+        current_digital_tools: parsedTools,
+
+        major_technology_challenges: item.major_technology_challenges || '',
+        support_type_seeking: parsedSupport,
+        description_of_solution_needed: item.description_of_solution_needed || '',
+        main_problem_to_solve: item.main_problem_to_solve || '',
+        intended_users: item.intended_users || 'Field animators and coordinators',
+        estimated_users_count: Number(item.estimated_users_count) || 5,
+
+        has_previous_digital_project: Boolean(item.has_previous_digital_project),
+        previous_digital_project_details: item.previous_digital_project_details || '',
+
+        requirement_urgency: (item.requirement_urgency as any) || 'Immediate (Within 1 month)',
+        preferred_timeline: item.preferred_timeline || '3 to 6 months',
+        first_priority_support: item.first_priority_support || 'MIS and Digital Data Management',
+
+        documents: item.documents || [],
+        status_history: item.status_history || [
+          {
+            id: `sh-${Date.now()}-${counter}`,
+            application_id: formattedId,
+            previous_status: 'None',
+            new_status: item.status || 'New Application',
+            changed_by: 'Excel Bulk Import (Admin Portal)',
+            changed_at: now,
+            internal_remarks: 'Imported via Excel/CSV Bulk Data Upload in Admin Portal.',
+          },
+        ],
+      };
+      newApps.push(app);
+    }
+
+    const updatedList = [...newApps, ...list];
+    this.save(STORAGE_KEYS.APPLICATIONS, updatedList);
+    return { successCount: newApps.length, importedApps: newApps };
+  }
+
   static updateApplicationStatus(
     appId: string,
     newStatus: Application['status'],

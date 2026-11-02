@@ -14,6 +14,8 @@ import {
   Building,
   ArrowUpRight,
   MessageSquare,
+  FileSpreadsheet,
+  UploadCloud,
 } from 'lucide-react';
 import { SevaStore } from '../../services/store';
 import { Application, ProgrammeProject, Meeting } from '../../types';
@@ -24,6 +26,7 @@ interface AdminOverviewProps {
   meetings: Meeting[];
   onSelectApplication: (app: Application) => void;
   onNavigateTab: (tab: string) => void;
+  onOpenExcelImport?: () => void;
 }
 
 export const AdminOverview: React.FC<AdminOverviewProps> = ({
@@ -32,6 +35,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
   meetings,
   onSelectApplication,
   onNavigateTab,
+  onOpenExcelImport,
 }) => {
   // Count by status
   const counts = {
@@ -87,9 +91,18 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
               SEVA तंत्रज्ञान सहाय्य कार्यक्रम डॅशबोर्ड
             </h2>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-emerald-200 font-medium">लाइव्ह स्थिती:</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-900/80 border border-emerald-500/50 text-emerald-100 text-xs font-bold">
+          <div className="flex flex-wrap items-center gap-2">
+            {onOpenExcelImport && (
+              <button
+                onClick={onOpenExcelImport}
+                className="px-3.5 py-1.5 rounded-full bg-amber-400 hover:bg-amber-300 text-stone-900 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+                title="Excel फाईलवरून डेटा अपलोड करा"
+              >
+                <UploadCloud className="w-4 h-4 text-stone-900" />
+                <span>Excel डेटा अपलोड करा</span>
+              </button>
+            )}
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-900/80 border border-emerald-500/50 text-emerald-100 text-xs font-bold">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
               <span>सिस्टम कार्यरत</span>
             </span>
@@ -189,6 +202,45 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
               संस्थाचालक फोटो व आकडेवारी
             </div>
           </button>
+        </div>
+
+        {/* Excel Import Feature Banner */}
+        <div className="bg-emerald-950/80 border border-emerald-600/40 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-800/80 text-emerald-200 flex items-center justify-center shrink-0 border border-emerald-500/30">
+              <FileSpreadsheet className="w-5 h-5 text-emerald-300" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-white flex items-center gap-2">
+                <span>Excel Sheet द्वारे डेटा बल्क अपलोड करण्याची सुविधा</span>
+                <span className="px-2 py-0.5 rounded-full bg-amber-400 text-stone-900 text-[10px] font-extrabold">
+                  नवीन
+                </span>
+              </div>
+              <p className="text-xs text-emerald-200/80 mt-0.5">
+                एकाच वेळी अनेक संस्थांचा डेटा थेट Excel (.xlsx, .xls) किंवा CSV फाईलवरून सिस्टीममध्ये अपलोड करा. नमुना शीट डाउनलोड करा व वापरा.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {onOpenExcelImport ? (
+              <button
+                onClick={onOpenExcelImport}
+                className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-900 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+              >
+                <UploadCloud className="w-4 h-4 text-stone-900" />
+                <span>Excel Sheet अपलोड करा</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => onNavigateTab('applications')}
+                className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-900 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+              >
+                <UploadCloud className="w-4 h-4 text-stone-900" />
+                <span>अर्ज विभागात जा</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

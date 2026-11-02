@@ -10,18 +10,23 @@ import {
   ChevronDown,
   ArrowUpDown,
   FileSpreadsheet,
+  UploadCloud,
 } from 'lucide-react';
 import { Application, ApplicationStatus, PriorityLevel } from '../../types';
+import { ExcelImportModal } from './ExcelImportModal';
 
 interface ApplicationsManagerProps {
   applications: Application[];
   onSelectApplication: (app: Application) => void;
+  onRefresh?: () => void;
 }
 
 export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
   applications,
   onSelectApplication,
+  onRefresh,
 }) => {
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [priorityFilter, setPriorityFilter] = useState<string>('All');
@@ -152,13 +157,25 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={exportToCSV}
-          className="px-4 py-2 rounded-lg border border-stone-300 hover:bg-stone-50 text-stone-700 text-xs font-semibold flex items-center gap-2 cursor-pointer transition-colors shadow-xs"
-        >
-          <FileSpreadsheet className="w-4 h-4 text-[#0B6643]" />
-          <span>Export to CSV / Excel</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="px-4 py-2 rounded-xl bg-[#184E34] hover:bg-[#0F3825] text-white text-xs font-bold flex items-center gap-2 cursor-pointer transition-all shadow-xs active:scale-[0.98]"
+            title="Excel किंवा CSV फाईलवरून संस्थांचा डेटा सिस्टीममध्ये अपलोड करा"
+          >
+            <UploadCloud className="w-4 h-4 text-emerald-300" />
+            <span>Excel Sheet अपलोड करा (Bulk Upload)</span>
+          </button>
+
+          <button
+            onClick={exportToCSV}
+            className="px-3.5 py-2 rounded-xl border border-stone-300 hover:bg-stone-50 text-stone-700 text-xs font-semibold flex items-center gap-2 cursor-pointer transition-colors shadow-2xs"
+            title="विद्यमान सर्व अर्ज CSV किंवा Excel मध्ये डाउनलोड करा"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-[#0B6643]" />
+            <span>Export to CSV / Excel</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter Bar */}
@@ -384,6 +401,15 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Excel Import Modal */}
+      <ExcelImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportSuccess={(count) => {
+          onRefresh?.();
+        }}
+      />
     </div>
   );
 };

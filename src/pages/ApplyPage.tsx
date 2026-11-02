@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   CheckCircle2,
   AlertCircle,
@@ -19,6 +19,11 @@ import {
 import { SevaStore } from '../services/store';
 import { Application } from '../types';
 import { insertApplicationToSupabase, SUPABASE_PROJECT_ID } from '../services/supabase';
+import {
+  INDIAN_STATES_28,
+  INDIAN_UNION_TERRITORIES_8,
+  getDistrictsForState,
+} from '../data/indiaStatesAndDistricts';
 
 interface ApplyPageProps {
   onNavigate: (view: string) => void;
@@ -92,39 +97,22 @@ export const ApplyPage: React.FC<ApplyPageProps> = ({ onNavigate }) => {
     'Other Non-Profit Entity',
   ];
 
-  const stateOptions = [
-    'Maharashtra',
-    'Madhya Pradesh',
-    'Chhattisgarh',
-    'Gujarat',
-    'Telangana',
-    'Odisha',
-    'Rajasthan',
-    'Karnataka',
-    'Other State in India',
-  ];
+  const [customDistrict, setCustomDistrict] = useState('');
 
-  const maharashtraDistricts = [
-    'Yavatmal',
-    'Wardha',
-    'Amravati',
-    'Nagpur',
-    'Chandrapur',
-    'Gadchiroli',
-    'Akola',
-    'Buldhana',
-    'Washim',
-    'Bhandara',
-    'Gondia',
-    'Nanded',
-    'Hingoli',
-    'Parbhani',
-    'Jalna',
-    'Aurangabad (Chhatrapati Sambhajinagar)',
-    'Pune',
-    'Nashik',
-    'Other District',
-  ];
+  const currentDistricts = useMemo(() => {
+    return getDistrictsForState(formData.state);
+  }, [formData.state]);
+
+  const handleStateChange = (newState: string) => {
+    const districts = getDistrictsForState(newState);
+    const defaultDistrict = districts[0] || 'Other District';
+    setFormData((prev) => ({
+      ...prev,
+      state: newState,
+      district: defaultDistrict,
+    }));
+    setCustomDistrict('');
+  };
 
   const workAreaOptions = [
     'Agriculture',
@@ -179,6 +167,12 @@ export const ApplyPage: React.FC<ApplyPageProps> = ({ onNavigate }) => {
     if (step === 1) {
       if (!formData.name_of_organization.trim()) errs.name_of_organization = 'Organization Name is required.';
       if (!formData.registration_number.trim()) errs.registration_number = 'Registration Number is required.';
+      if (!formData.state.trim()) errs.state = 'State is required.';
+      if (!formData.district.trim()) {
+        errs.district = 'District is required.';
+      } else if (formData.district === 'Other District' && !customDistrict.trim()) {
+        errs.district = 'Please enter your district name.';
+      }
       if (!formData.organisation_address.trim()) errs.organisation_address = 'Full address is required.';
       if (!formData.organisation_email.trim() || !formData.organisation_email.includes('@')) {
         errs.organisation_email = 'Valid organization email is required.';
@@ -260,9 +254,15 @@ export const ApplyPage: React.FC<ApplyPageProps> = ({ onNavigate }) => {
     e.preventDefault();
     if (!validateStep(currentStep)) return;
 
+    const finalDistrict =
+      formData.district === 'Other District' && customDistrict.trim()
+        ? customDistrict.trim()
+        : formData.district;
+
     // 1. Save in local database store
     const newApp = SevaStore.submitApplication({
       ...formData,
+      district: finalDistrict,
       annual_beneficiaries_reached: Number(formData.annual_beneficiaries_reached) || 0,
       villages_covered: Number(formData.villages_covered) || 0,
       estimated_users_count: Number(formData.estimated_users_count) || 1,
@@ -545,45 +545,72 @@ export const ApplyPage: React.FC<ApplyPageProps> = ({ onNavigate }) => {
 
               {/* Field 5: State */}
               <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                  5. State *
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-stone-700">
+                    5. State / राज्य *
+                  </label>
+                  <span className="text-[10px] text-stone-500 font-medium">
+                    28 States &amp; 8 UTs
+                  </span>
+                </div>
                 <select
                   value={formData.state}
-                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                  onChange={(e) => handleStateChange(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 text-sm bg-white focus:ring-2 focus:ring-[#0B6643]/30 focus:border-[#0B6643]"
                 >
-                  {stateOptions.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
+                  <optgroup label="States / राज्ये (28)">
+                    {INDIAN_STATES_28.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Union Territories / केंद्रशासित प्रदेश (8)">
+                    {INDIAN_UNION_TERRITORIES_8.map((ut) => (
+                      <option key={ut} value={ut}>{ut}</option>
+                    ))}
+                  </optgroup>
                 </select>
+                {errors.state && <p className="text-xs text-red-600 mt-1">{errors.state}</p>}
               </div>
 
               {/* Field 6: District */}
               <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                  6. District *
-                </label>
-                {formData.state === 'Maharashtra' ? (
-                  <select
-                    value={formData.district}
-                    onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 text-sm bg-white focus:ring-2 focus:ring-[#0B6643]/30 focus:border-[#0B6643]"
-                  >
-                    {maharashtraDistricts.map((d) => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    required
-                    value={formData.district}
-                    onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                    placeholder="Enter district name"
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 text-sm focus:ring-2 focus:ring-[#0B6643]/30 focus:border-[#0B6643]"
-                  />
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-stone-700">
+                    6. District / जिल्हा *
+                  </label>
+                  <span className="text-[10px] text-stone-500 font-medium">
+                    {currentDistricts.filter(d => d !== 'Other District').length} districts in {formData.state}
+                  </span>
+                </div>
+                <select
+                  value={formData.district}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData({ ...formData, district: val });
+                    if (val !== 'Other District') {
+                      setCustomDistrict('');
+                    }
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 text-sm bg-white focus:ring-2 focus:ring-[#0B6643]/30 focus:border-[#0B6643]"
+                >
+                  {currentDistricts.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+
+                {formData.district === 'Other District' && (
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      required
+                      value={customDistrict}
+                      onChange={(e) => setCustomDistrict(e.target.value)}
+                      placeholder="Enter district name / जिल्ह्याचे नाव लिहा"
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-amber-300 bg-amber-50/50 text-sm focus:ring-2 focus:ring-[#0B6643]/30 focus:border-[#0B6643]"
+                    />
+                  </div>
                 )}
+                {errors.district && <p className="text-xs text-red-600 mt-1">{errors.district}</p>}
               </div>
 
               {/* Field 7: Organisation Address */}

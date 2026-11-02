@@ -175,11 +175,13 @@ export interface EmailLog {
   application_id: string;
   recipient_email: string;
   recipient_name: string;
+  cc_email?: string;
   subject: string;
   body: string;
   sent_at: string;
   sent_by: string;
-  status: 'Delivered' | 'Sent' | 'Failed';
+  status: 'Delivered' | 'Sent' | 'Failed' | 'Dispatched via Gmail' | 'Sent via Mail App';
+  delivery_method?: string;
   template_used?: string;
 }
 

@@ -1179,10 +1179,13 @@ export class SevaStore {
     application_id?: string;
     recipient_email: string;
     recipient_name: string;
+    cc_email?: string;
     subject: string;
     body: string;
     template_used?: string;
     sent_by: string;
+    status?: EmailLog['status'];
+    delivery_method?: string;
   }): EmailLog {
     const list = this.getEmailLogs();
     const log: EmailLog = {
@@ -1190,16 +1193,28 @@ export class SevaStore {
       application_id: payload.application_id || '',
       recipient_email: payload.recipient_email,
       recipient_name: payload.recipient_name,
+      cc_email: payload.cc_email || 'seva.ecology@gmail.com',
       subject: payload.subject,
       body: payload.body,
       sent_at: new Date().toISOString(),
       sent_by: payload.sent_by,
-      status: 'Delivered',
+      status: payload.status || 'Dispatched via Gmail',
+      delivery_method: payload.delivery_method || 'Gmail Web (CC: seva.ecology@gmail.com)',
       template_used: payload.template_used,
     };
     const updated = [log, ...list];
     this.save(STORAGE_KEYS.EMAIL_LOGS, updated);
     return log;
+  }
+
+  static deleteEmailLog(id: string): void {
+    const list = this.getEmailLogs();
+    const updated = list.filter((l) => l.id !== id);
+    this.save(STORAGE_KEYS.EMAIL_LOGS, updated);
+  }
+
+  static clearEmailLogs(): void {
+    this.save(STORAGE_KEYS.EMAIL_LOGS, []);
   }
 
   // Active Projects (Part 10)

@@ -14,6 +14,9 @@ import {
   AlertCircle,
   X,
   ShieldCheck,
+  Edit3,
+  Check,
+  RotateCcw,
 } from 'lucide-react';
 import { EmailTemplate, EmailLog, Application } from '../../types';
 import { SevaStore } from '../../services/store';
@@ -60,9 +63,47 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
 
   const [subject, setSubject] = useState(renderTemplateTokens(currentTemplate?.subject || '', selectedApp));
   const [body, setBody] = useState(renderTemplateTokens(currentTemplate?.body || '', selectedApp));
+  const [signature, setSignature] = useState<string>(SevaStore.getEmailSignature());
+  const [isEditingSig, setIsEditingSig] = useState(false);
+  const [sigSavedNotice, setSigSavedNotice] = useState(false);
   const [sendSuccessMsg, setSendSuccessMsg] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [viewingLog, setViewingLog] = useState<EmailLog | null>(null);
+
+  // Helper to get complete outgoing email text including the official signature
+  const getCompleteOutgoingMessage = (): string => {
+    const trimmedBody = body.trim();
+    const trimmedSig = signature.trim();
+    if (!trimmedSig) return trimmedBody;
+
+    // Avoid duplication if the body already ends with the exact signature
+    if (trimmedBody.endsWith(trimmedSig)) {
+      return trimmedBody;
+    }
+
+    // Avoid duplication if the body already contains the core organization signature block
+    if (trimmedBody.includes('Technology Support Secretariat\nSustainable Ecology & Village Advancement (SEVA)')) {
+      return trimmedBody;
+    }
+
+    return `${trimmedBody}\n\n${trimmedSig}`;
+  };
+
+  const handleSaveSignature = () => {
+    SevaStore.saveEmailSignature(signature);
+    setIsEditingSig(false);
+    setSigSavedNotice(true);
+    setTimeout(() => setSigSavedNotice(false), 3000);
+  };
+
+  const handleResetSignature = () => {
+    const defaultSig = `Warm regards,\nTechnology Support Secretariat\nSustainable Ecology & Village Advancement (SEVA)\n31 B, Jalka, Ralegaon, Dist. Yavatmal, Maharashtra – 445402\nContact: +91 8999469974 | Email: seva.ecology@gmail.com\nWebsite: https://sevavillage.org`;
+    setSignature(defaultSig);
+    SevaStore.saveEmailSignature(defaultSig);
+    setIsEditingSig(false);
+    setSigSavedNotice(true);
+    setTimeout(() => setSigSavedNotice(false), 3000);
+  };
 
   // When changing template or application, re-populate tokens
   const handleTemplateChange = (tplId: string) => {
@@ -89,9 +130,10 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
 
     const to = selectedApp.organisation_email;
     const cc = ccEmail.trim() || 'seva.ecology@gmail.com';
+    const outgoingMessage = getCompleteOutgoingMessage();
 
     // Construct Gmail Web Compose URL
-    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&cc=${encodeURIComponent(cc)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&cc=${encodeURIComponent(cc)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(outgoingMessage)}`;
 
     // Open Gmail compose tab
     window.open(gmailUrl, '_blank');
@@ -103,7 +145,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       recipient_name: selectedApp.contact_person_name,
       cc_email: cc,
       subject,
-      body,
+      body: outgoingMessage,
       template_used: currentTemplate?.category,
       sent_by: 'SEVA Admin (seva.ecology@gmail.com)',
       status: 'Dispatched via Gmail',
@@ -121,8 +163,9 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
 
     const to = selectedApp.organisation_email;
     const cc = ccEmail.trim() || 'seva.ecology@gmail.com';
+    const outgoingMessage = getCompleteOutgoingMessage();
 
-    const mailtoUrl = `mailto:${encodeURIComponent(to)}?cc=${encodeURIComponent(cc)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const mailtoUrl = `mailto:${encodeURIComponent(to)}?cc=${encodeURIComponent(cc)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(outgoingMessage)}`;
     window.location.href = mailtoUrl;
 
     const newLog = SevaStore.sendEmail({
@@ -131,7 +174,7 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
       recipient_name: selectedApp.contact_person_name,
       cc_email: cc,
       subject,
-      body,
+      body: outgoingMessage,
       template_used: currentTemplate?.category,
       sent_by: 'SEVA Admin (Default Mail Client)',
       status: 'Sent via Mail App',
@@ -145,7 +188,8 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
 
   // 3. Copy draft to clipboard
   const handleCopyDraft = () => {
-    const fullDraft = `To: ${selectedApp?.organisation_email || ''}\nCC: ${ccEmail}\nSubject: ${subject}\n\n${body}`;
+    const outgoingMessage = getCompleteOutgoingMessage();
+    const fullDraft = `To: ${selectedApp?.organisation_email || ''}\nCC: ${ccEmail}\nSubject: ${subject}\n\n${outgoingMessage}`;
     navigator.clipboard.writeText(fullDraft);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -347,8 +391,94 @@ export const EmailManager: React.FC<EmailManagerProps> = ({
               />
             </div>
 
-            <div className="p-3 rounded-xl bg-stone-50 border border-stone-200 text-[11px] text-stone-500">
-              <strong>Official Sender Signature:</strong> SEVA – Sustainable Ecology &amp; Village Advancement · 31 B, Jalka, Ralegaon, Dist. Yavatmal, Maharashtra – 445402. Contact: +91 8999469974 · Email: seva.ecology@gmail.com
+            {/* Dedicated Signature section requested by user: Signature: (appended at the end of all outgoing messages) */}
+            <div className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-200/80 pb-2.5">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="text-xs font-bold text-stone-900 tracking-tight">
+                      Signature:
+                    </label>
+                    <span className="text-[11px] font-medium text-stone-600">
+                      (appended at the end of all outgoing messages)
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-500 mt-0.5">
+                    हा अधिकृत स्वाक्षरी ब्लॉक सर्व बाहेर जाणार्‍या ईमेलच्या शेवटी आपोआप जोडला जातो.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {isEditingSig ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleSaveSignature}
+                        className="px-3 py-1.5 rounded-lg bg-[#184E34] hover:bg-[#0F3825] text-white text-[11px] font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>स्वाक्षरी सेव्ह करा (Save)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSignature(SevaStore.getEmailSignature());
+                          setIsEditingSig(false);
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-600 text-[11px] font-medium cursor-pointer transition-colors"
+                      >
+                        रद्द करा
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingSig(true)}
+                        className="px-3 py-1.5 rounded-lg border border-stone-300 hover:bg-white bg-white/80 text-stone-700 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-stone-600" />
+                        <span>स्वाक्षरी संपादित करा (Edit)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleResetSignature}
+                        className="px-2.5 py-1.5 rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-500 hover:text-stone-700 text-[11px] font-medium flex items-center gap-1 cursor-pointer transition-colors"
+                        title="डिफॉल्ट SEVA स्वाक्षरीवर रिसेट करा"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        <span>डिफॉल्ट रिसेट</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {sigSavedNotice && (
+                <div className="px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+                  <span>स्वाक्षरी यशस्वीरित्या सेव्ह झाली आहे!</span>
+                </div>
+              )}
+
+              {isEditingSig ? (
+                <div className="space-y-1.5">
+                  <textarea
+                    rows={6}
+                    value={signature}
+                    onChange={(e) => setSignature(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-[#184E34]/40 bg-white text-xs font-mono whitespace-pre-wrap leading-relaxed focus:ring-2 focus:ring-[#184E34]/20"
+                    placeholder="येथे तुमची अधिकृत स्वाक्षरी लिहा..."
+                  />
+                  <div className="text-[10px] text-stone-400">
+                    टीप: येथे सेव्ह केलेली स्वाक्षरी ब्राउझरमध्ये कायमस्वरूपी सेव्ह राहील व सर्व ईमेलच्या शेवटी जाईल.
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-white border border-stone-200/90 text-xs font-mono text-stone-700 whitespace-pre-wrap leading-relaxed shadow-2xs">
+                  {signature}
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}

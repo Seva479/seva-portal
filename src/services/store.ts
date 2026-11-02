@@ -829,6 +829,7 @@ const STORAGE_KEYS = {
   MEETINGS: 'seva_meetings_v1',
   EMAIL_LOGS: 'seva_email_logs_v1',
   EMAIL_TEMPLATES: 'seva_email_templates_v1',
+  EMAIL_SIGNATURE: 'seva_email_signature_v1',
   PROJECTS: 'seva_projects_v1',
   CONTACT_MESSAGES: 'seva_contact_messages_v1',
   CURRENT_USER: 'seva_current_user_v1',
@@ -1215,6 +1216,18 @@ export class SevaStore {
 
   static clearEmailLogs(): void {
     this.save(STORAGE_KEYS.EMAIL_LOGS, []);
+  }
+
+  // Official Email Signature (appended at the end of all outgoing messages)
+  static getEmailSignature(): string {
+    return this.load<string>(
+      STORAGE_KEYS.EMAIL_SIGNATURE,
+      `Warm regards,\nTechnology Support Secretariat\nSustainable Ecology & Village Advancement (SEVA)\n31 B, Jalka, Ralegaon, Dist. Yavatmal, Maharashtra – 445402\nContact: +91 8999469974 | Email: seva.ecology@gmail.com\nWebsite: https://sevavillage.org`
+    );
+  }
+
+  static saveEmailSignature(signature: string): void {
+    this.save(STORAGE_KEYS.EMAIL_SIGNATURE, signature);
   }
 
   // Active Projects (Part 10)

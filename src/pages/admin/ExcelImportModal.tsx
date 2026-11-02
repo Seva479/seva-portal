@@ -44,45 +44,76 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Normalization helper for column names
-  const normalizeKey = (key: string): string => {
-    return key
+  // Universal key cleaner: removes spaces, brackets, parentheses, colons, stars, quotes, slashes, hyphens, etc.
+  const cleanKey = (str: string): string => {
+    return String(str || '')
       .toLowerCase()
-      .trim()
-      .replace(/[\s\-_.\*]/g, '');
+      .replace(/[\s\-_.\*()[\]{}:;,\/'"#?!@+]/g, '')
+      .trim();
   };
 
-  const mapRowToApplication = (rawRow: Record<string, any>, idx: number): ParsedRowPreview => {
-    const normRow: Record<string, any> = {};
-    for (const [key, val] of Object.entries(rawRow)) {
-      normRow[normalizeKey(key)] = val;
+  const mapRowToApplication = (rawRow: Record<string, any>, idx: number): ParsedRowPreview | null => {
+    // Check if the entire row has any non-blank value
+    const nonBlankEntries = Object.entries(rawRow).filter(([_, v]) => {
+      return v !== undefined && v !== null && String(v).trim() !== '';
+    });
+    if (nonBlankEntries.length === 0) {
+      return null; // Skip empty row
     }
 
-    // Smart matcher for various Marathi & English headers
-    const getValue = (patterns: string[]): any => {
-      for (const p of patterns) {
-        const normP = normalizeKey(p);
-        if (normRow[normP] !== undefined && normRow[normP] !== null && String(normRow[normP]).trim() !== '') {
-          return normRow[normP];
-        }
+    // Build list of cleaned key-value pairs
+    const cleanedPairs = nonBlankEntries.map(([k, v]) => ({
+      rawKey: k,
+      clean: cleanKey(k),
+      value: v,
+    }));
+
+    // Universal value matcher:
+    // Matches if cleaned key exactly matches, or contains the keyword, or the keyword contains the cleaned key
+    const getValue = (keywords: string[]): any => {
+      for (const kw of keywords) {
+        const cleanKw = cleanKey(kw);
+        // 1. Exact match on cleaned key
+        const exact = cleanedPairs.find((p) => p.clean === cleanKw);
+        if (exact) return exact.value;
+
+        // 2. Contains match (e.g. 'संस्थेचेनावorganisationname' matches 'organisation' or 'संस्थेचेनाव')
+        const contains = cleanedPairs.find(
+          (p) => p.clean.includes(cleanKw) || (cleanKw.length > 3 && cleanKw.includes(p.clean))
+        );
+        if (contains) return contains.value;
       }
       return undefined;
     };
 
-    const orgName = getValue([
-      'name_of_organization',
-      'organisation_name',
-      'organization_name',
+    let orgName = getValue([
+      'संस्थेचे नाव (Organisation Name) *',
+      'संस्थेचे नाव (Organisation Name)',
       'संस्थेचे नाव',
       'संस्था नाव',
       'संस्था',
+      'name_of_organization',
+      'organisation_name',
+      'organization_name',
       'organisation',
       'organization',
       'org_name',
+      'orgname',
       'name',
     ]);
 
+    // Fallback: If orgName not found via key, use the first non-numeric textual column
+    if (!orgName) {
+      const candidate = cleanedPairs.find(
+        (p) => typeof p.value === 'string' && p.value.trim().length > 1 && isNaN(Number(p.value.trim()))
+      );
+      if (candidate) {
+        orgName = candidate.value;
+      }
+    }
+
     const orgType = getValue([
+      'संस्थेचा प्रकार (Type)',
       'type_of_organization',
       'organisation_type',
       'संस्थेचा प्रकार',
@@ -92,36 +123,44 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
     ]) || 'Trust';
 
     const estYear = getValue([
+      'स्थापना वर्ष (Year of Est)',
       'year_of_establishment',
       'establishment_year',
       'स्थापना वर्ष',
+      'स्थापना',
       'वर्ष',
       'year',
       'est_year',
     ]);
 
     const regNo = getValue([
+      'नोंदणी क्रमांक (Reg Number)',
       'registration_number',
       'reg_no',
       'नोंदणी क्रमांक',
       'नोंदणी क्र',
-      'नोंदणी नंबर',
+      'नोंदणी',
       'registration',
     ]) || '';
 
     const state = getValue([
+      'राज्य (State) *',
+      'राज्य (State)',
       'state',
       'राज्य',
       'state_name',
     ]) || 'Maharashtra';
 
     const district = getValue([
+      'जिल्हा (District) *',
+      'जिल्हा (District)',
       'district',
       'जिल्हा',
       'district_name',
-    ]) || 'Yavatmal';
+    ]) || '';
 
     const address = getValue([
+      'संस्थेचा पत्ता (Address)',
       'organisation_address',
       'address',
       'संस्थेचा पत्ता',
@@ -129,25 +168,32 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
     ]) || '';
 
     const email = getValue([
+      'ईमेल (Email) *',
+      'ईमेल (Email)',
       'organisation_email',
-      'email',
       'ईमेल',
       'ई-मेल',
+      'email',
       'mail',
       'contact_email',
     ]) || '';
 
     const contactPerson = getValue([
+      'संपर्क व्यक्ती (Contact Person) *',
+      'संपर्क व्यक्ती (Contact Person)',
       'contact_person_name',
       'contact_person',
-      'संपर्क व्यक्ती',
       'संपर्क व्यक्तीचे नाव',
+      'संपर्क व्यक्ती',
+      'व्यक्ती',
+      'संपर्क',
       'नाव',
       'person_name',
       'contact_name',
     ]) || '';
 
     const designation = getValue([
+      'पद (Designation)',
       'designation',
       'पद',
       'हुद्दा',
@@ -156,26 +202,31 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
     ]) || 'Coordinator';
 
     const phone = getValue([
+      'मोबाईल क्रमांक (10 Digits) *',
+      'मोबाईल क्रमांक (10 Digits)',
       'contact_number',
-      'mobile',
-      'phone',
+      'मोबाईल क्रमांक',
       'मोबाईल',
       'फोन',
       'संपर्क क्रमांक',
+      'mobile',
+      'phone',
       'contact_no',
       'mobile_number',
     ]) || '';
 
     const keyAreas = getValue([
+      'कामाचे क्षेत्र (Key Areas)',
       'key_areas_of_work',
       'focus_areas',
-      'कामाचे क्षेत्र',
       'कामाचे मुख्य क्षेत्र',
+      'कामाचे क्षेत्र',
       'क्षेत्र',
       'sectors',
     ]);
 
     const villages = getValue([
+      'गावे संख्या (Villages)',
       'villages_covered',
       'villages',
       'गावे संख्या',
@@ -184,14 +235,17 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
     ]) || 0;
 
     const beneficiaries = getValue([
+      'वार्षिक लाभार्थी (Beneficiaries)',
       'annual_beneficiaries_reached',
       'beneficiaries',
       'वार्षिक लाभार्थी संख्या',
+      'वार्षिक लाभार्थी',
       'लाभार्थी',
       'annual_beneficiaries',
     ]) || 0;
 
     const primaryBeneficiaries = getValue([
+      'प्राथमिक लाभार्थी (Primary Beneficiaries)',
       'primary_beneficiaries',
       'प्राथमिक लाभार्थी',
       'लाभार्थी वर्ग',
@@ -199,18 +253,21 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
     ]) || 'Rural Communities';
 
     const supportSeeking = getValue([
+      'प्रथम प्राधान्य टेक सपोर्ट (Support Needed)',
       'first_priority_support',
       'support_type_seeking',
-      'टेक सपोर्ट',
       'प्रथम प्राधान्य टेक सपोर्ट',
+      'टेक सपोर्ट',
       'मदत',
       'support_type',
     ]) || 'MIS and Digital Data Management';
 
     const challenges = getValue([
+      'सध्याच्या तांत्रिक अडचणी (Tech Challenges)',
       'major_technology_challenges',
       'challenges',
       'सध्याच्या तांत्रिक अडचणी',
+      'तांत्रिक अडचणी',
       'अडचणी',
       'tech_challenges',
     ]) || '';
@@ -222,7 +279,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
 
     // Validation rule
     const isValid = Boolean(orgName && String(orgName).trim().length > 1);
-    const validationError = !isValid ? 'संस्थेचे नाव (Organisation Name) आवश्यक आहे.' : undefined;
+    const validationError = !isValid ? 'संस्थेचे नाव आढळले नाही.' : undefined;
 
     const data: Partial<Application> = {
       name_of_organization: String(orgName || '').trim(),
@@ -290,7 +347,19 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
           throw new Error('या फाईलमध्ये कोणताही डेटा सापडला नाही. कृपया डेटा तपासा.');
         }
 
-        const previews = rawJson.map((row, i) => mapRowToApplication(row, i));
+        const nonNullRows = rawJson
+          .map((row, i) => mapRowToApplication(row, i))
+          .filter((item): item is ParsedRowPreview => item !== null);
+
+        const previews = nonNullRows.map((item, idx) => ({
+          ...item,
+          index: idx + 1,
+        }));
+
+        if (previews.length === 0) {
+          throw new Error('या फाईलमध्ये कोणतीही भरलेली ओळ सापडली नाही.');
+        }
+
         setParsedRows(previews);
         setIsLoading(false);
       } catch (err: any) {

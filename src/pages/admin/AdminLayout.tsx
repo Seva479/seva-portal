@@ -102,8 +102,16 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onExitAdmin }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           {/* Brand & Area */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#184E34] flex items-center justify-center font-extrabold text-lg border border-emerald-400/40 text-white">
-              S
+            <div className="w-9 h-9 rounded-xl bg-[#E8F5E9] p-0.5 flex items-center justify-center shrink-0 border border-emerald-300/60 shadow-xs">
+              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
+                <path d="M24 4 C14 12 10 24 16 36 C22 48 38 44 42 28 C46 12 34 6 24 4 Z" fill="#52B788" opacity="0.85" />
+                <circle cx="12" cy="24" r="2.5" fill="#F59E0B" />
+                <circle cx="36" cy="24" r="2.5" fill="#F59E0B" />
+                <circle cx="24" cy="12" r="2.5" fill="#38BDF8" />
+                <text x="24" y="32" textAnchor="middle" fill="#FFFFFF" fontSize="22" fontWeight="900" fontFamily="sans-serif">
+                  S
+                </text>
+              </svg>
             </div>
             <div>
               <div className="flex items-center gap-2">

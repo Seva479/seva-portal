@@ -46,7 +46,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=Lora:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <!-- Critical Mobile & Base Fallback Styles (Ensures immediate clean rendering on mobile devices and 2G networks) -->
+    <!-- Foundational Base Reset Styles (Ensures immediate clean rendering and proper typography across devices) -->
     <style>
       *, *::before, *::after {
         box-sizing: border-box;
@@ -69,35 +69,12 @@
         cursor: pointer;
       }
       svg {
-        max-width: 100%;
         display: inline-block;
         vertical-align: middle;
       }
-      /* Prevent unstyled SVG expansion before CSS loads */
-      .w-12 { width: 3rem !important; }
-      .h-12 { height: 3rem !important; }
-      .w-14 { width: 3.5rem !important; }
-      .h-14 { height: 3.5rem !important; }
-      .hidden { display: none !important; }
-      @media (max-width: 639px) {
-        .sm\:hidden { display: none !important; }
-      }
-      @media (min-width: 640px) {
-        .sm\:hidden { display: none !important; }
-        .sm\:inline { display: inline !important; }
-        .sm\:block { display: block !important; }
-        .sm\:flex { display: flex !important; }
-      }
-      @media (max-width: 767px) {
-        .md\:hidden { display: none !important; }
-        .hidden.md\:block { display: none !important; }
-        .hidden.md\:inline { display: none !important; }
-        .hidden.md\:flex { display: none !important; }
-      }
-      @media (max-width: 1023px) {
-        .lg\:hidden { display: none !important; }
-        .hidden.lg\:block { display: none !important; }
-        .hidden.lg\:flex { display: none !important; }
+      img {
+        max-width: 100%;
+        height: auto;
       }
     </style>
 

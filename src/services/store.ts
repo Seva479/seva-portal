@@ -913,9 +913,101 @@ export class SevaStore {
     }
   }
 
-  // Applications
+  // Applications (Resilient multi-key loading ensures user-entered organisations are NEVER lost)
   static getApplications(): Application[] {
-    return this.load<Application[]>(STORAGE_KEYS.APPLICATIONS, INITIAL_APPLICATIONS);
+    const map = new Map<string, Application>();
+
+    // Step 1: Base fallback seed data
+    for (const app of INITIAL_APPLICATIONS) {
+      if (app && app.id) {
+        map.set(app.id, app);
+      }
+    }
+
+    // Step 2: Read from primary storage key
+    const primaryRaw = safeStorageGet(STORAGE_KEYS.APPLICATIONS);
+    if (primaryRaw) {
+      try {
+        const parsed = JSON.parse(primaryRaw);
+        if (Array.isArray(parsed)) {
+          for (const item of parsed) {
+            if (item && item.id) {
+              map.set(item.id, item);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Error reading primary applications:', e);
+      }
+    }
+
+    // Step 3: Check all known legacy/alternative keys where user work may reside
+    const legacyKeys = [
+      'seva_applications',
+      'applications',
+      'seva_apps',
+      'seva_applications_backup',
+      'seva_applications_v0',
+      'seva_org_applications',
+      'seva_applications_store',
+    ];
+
+    for (const lk of legacyKeys) {
+      const raw = safeStorageGet(lk);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            for (const item of parsed) {
+              if (item && item.id) {
+                map.set(item.id, item);
+              }
+            }
+          }
+        } catch (e) {
+          console.warn(`Error reading legacy key ${lk}:`, e);
+        }
+      }
+    }
+
+    // Step 4: Scan browser localStorage for any keys with application records
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        for (let i = 0; i < window.localStorage.length; i++) {
+          const k = window.localStorage.key(i);
+          if (k && (k.includes('application') || k.includes('seva_app') || k.includes('organis'))) {
+            if (!legacyKeys.includes(k) && k !== STORAGE_KEYS.APPLICATIONS) {
+              try {
+                const val = window.localStorage.getItem(k);
+                if (val && val.startsWith('[')) {
+                  const arr = JSON.parse(val);
+                  if (Array.isArray(arr) && arr.length > 0 && (arr[0].name_of_organization || arr[0].contact_person_name)) {
+                    for (const item of arr) {
+                      if (item && (item.id || item.name_of_organization)) {
+                        const id = item.id || `SEVA-RESTORED-${map.size + 1}`;
+                        map.set(id, { ...item, id });
+                      }
+                    }
+                  }
+                }
+              } catch (e) {
+                // Ignore parse errors
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore private browsing restrictions
+    }
+
+    const merged = Array.from(map.values());
+
+    // Synchronize to primary and backup keys
+    safeStorageSet(STORAGE_KEYS.APPLICATIONS, JSON.stringify(merged));
+    safeStorageSet('seva_applications', JSON.stringify(merged));
+
+    return merged;
   }
 
   static getApplicationById(id: string): Application | undefined {

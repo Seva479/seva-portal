@@ -66,18 +66,36 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
     'Data Management, Documentation and Reporting Systems',
   ];
 
-  // Filtering and sorting logic
+  // Safe filtering and sorting logic
   const filtered = applications.filter((app) => {
+    if (!app) return false;
+    const orgName = (app.name_of_organization || '').toLowerCase();
+    const appId = (app.id || '').toLowerCase();
+    const contact = (app.contact_person_name || '').toLowerCase();
+    const dist = (app.district || '').toLowerCase();
+    const search = searchQuery.toLowerCase().trim();
+
     const matchesSearch =
-      app.name_of_organization.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.contact_person_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.district.toLowerCase().includes(searchQuery.toLowerCase());
+      !search ||
+      orgName.includes(search) ||
+      appId.includes(search) ||
+      contact.includes(search) ||
+      dist.includes(search);
 
     const matchesStatus = statusFilter === 'All' || app.status === statusFilter;
     const matchesPriority = priorityFilter === 'All' || app.priority === priorityFilter;
     const matchesState = stateFilter === 'All' || app.state === stateFilter;
-    const matchesSupport = supportFilter === 'All' || app.support_type_seeking.includes(supportFilter);
+    
+    let matchesSupport = true;
+    if (supportFilter !== 'All') {
+      if (Array.isArray(app.support_type_seeking)) {
+        matchesSupport = app.support_type_seeking.includes(supportFilter);
+      } else if (typeof app.support_type_seeking === 'string') {
+        matchesSupport = (app.support_type_seeking as string).includes(supportFilter);
+      } else {
+        matchesSupport = false;
+      }
+    }
 
     return matchesSearch && matchesStatus && matchesPriority && matchesState && matchesSupport;
   });

@@ -108,14 +108,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
             {/* Left Content */}
             <div className="lg:col-span-7 space-y-6">
-              {/* Title as requested: Sustainable Ecology & Village Advancement (SEVA) */}
+              {/* Main Headline (Bold, prominent) */}
               <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-[#143E29] leading-[1.18] text-balance">
-                Sustainable Ecology &amp; Village Advancement (SEVA)
+                Strengthening Grassroots Organisations Through Digital Transformation
               </h1>
 
-              {/* Subtitle (below title): An Initiative of Sarthi Sanstha */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm sm:text-base font-bold text-[#0B6643] tracking-wide">
+              {/* Subtitle (directly below main headline): An Initiative of Sarathi Sanstha */}
+              <div className="flex items-center gap-2 pt-0.5">
+                <span className="text-base sm:text-lg font-bold text-[#0B6643] tracking-wide">
                   An Initiative of{' '}
                   <a
                     href="https://www.sarathisanstha.org"
@@ -123,17 +123,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                     rel="noopener noreferrer"
                     className="underline hover:text-[#064E36] font-extrabold text-[#184E34]"
                   >
-                    Sarthi Sanstha
+                    Sarathi Sanstha
                   </a>
                 </span>
               </div>
 
-              {/* Tagline: Strengthening Grassroots Organisations Through Digital Transformation */}
-              <h2 className="text-lg sm:text-xl lg:text-2xl font-extrabold text-stone-800 tracking-tight leading-snug">
-                Strengthening Grassroots Organisations Through Digital Transformation
-              </h2>
-
-              {/* Change 3: Core Pillars in SEPARATE, DISTINCT COLOURS */}
+              {/* Core Pillars in SEPARATE, DISTINCT COLOURS */}
               <div className="pt-1 pb-1">
                 <div className="text-[11px] uppercase tracking-wider font-extrabold text-stone-500 mb-2">
                   Core Pillars:
@@ -173,12 +168,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
 
               {/* Main Description (hero paragraph) */}
               <p className="text-base sm:text-lg text-[#254636] leading-[1.72] max-w-2xl font-normal">
-                Technology should not be a barrier to village development. SEVA, an initiative of Sarthi Sanstha, works with grassroots organisations to simplify their systems, build digital confidence, improve data management, and amplify their ground social impact.
+                Technology should not be a barrier to village development. SEVA, an initiative of Sarathi Sanstha, works with grassroots organisations to simplify their systems, build digital confidence, improve data management, and amplify their ground social impact.
               </p>
 
               {/* Additional Paragraph (below main description) */}
               <p className="text-sm sm:text-base text-stone-600 leading-[1.68] max-w-2xl font-normal border-l-3 border-emerald-600/60 pl-3.5 bg-emerald-50/40 py-2 rounded-r-xl">
-                Sarthi Sanstha works with the objective of sustaining the livelihoods of tribal women and farmers, and also works on the issues of environment, education, and self-governance.
+                Sarathi Sanstha works with the objective of sustaining the livelihoods of tribal women and farmers, and also works on the issues of environment, education, and self-governance.
               </p>
 
               {/* CTAs */}

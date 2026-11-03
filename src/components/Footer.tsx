@@ -38,7 +38,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenAdmin }) => {
                     rel="noopener noreferrer"
                     className="text-amber-300 hover:text-white underline inline-flex items-center gap-0.5 font-bold"
                   >
-                    <span>Sarthi Sanstha</span>
+                    <span>Sarathi Sanstha</span>
                     <ArrowUpRight className="w-3 h-3" />
                   </a>
                 </p>
@@ -63,7 +63,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenAdmin }) => {
               Explore
             </h4>
             <ul className="space-y-2.5 text-sm text-emerald-100/80">
-              {/* Change 7: Sarthi Sanstha Link */}
+              {/* Sarathi Sanstha Link */}
               <li>
                 <a
                   href="https://www.sarathisanstha.org"
@@ -71,7 +71,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenAdmin }) => {
                   rel="noopener noreferrer"
                   className="text-amber-300 hover:text-white transition-colors inline-flex items-center gap-1.5 font-bold"
                 >
-                  <span>Sarthi Sanstha</span>
+                  <span>Sarathi Sanstha</span>
                   <ArrowUpRight className="w-3.5 h-3.5" />
                 </a>
               </li>

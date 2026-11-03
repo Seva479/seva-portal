@@ -225,7 +225,7 @@ export const INITIAL_CASE_STUDIES: CaseStudy[] = [
   },
 ];
 
-// Initial Knowledge Centre Resources (Part 11)
+// Initial Knowledge Centre Resources (Part 11) - Comprehensive for all 9 domain categories
 export const INITIAL_RESOURCES: ResourceItem[] = [
   {
     id: 'res-1',
@@ -234,7 +234,7 @@ export const INITIAL_RESOURCES: ResourceItem[] = [
     summary: 'A step-by-step framework for grassroots organisations to structure beneficiary databases without bloated software or expensive licenses.',
     content: `Many grassroots NGOs make the mistake of either collecting too little information or trying to collect 100 questions per family that nobody ever reads or analyzes.\n\nA practical rural MIS focuses on four core principles:\n1. Unit of Record: Define whether your primary entity is the individual, the household, or the self-help group.\n2. Indicator Discipline: Only collect data points that directly inform project decisions or donor compliance.\n3. Offline-First Architecture: Assume your field animators will encounter zero cellular connectivity in remote villages.\n4. Local Language Support: Ensure the data entry labels and confirmation screens match the vernacular language spoken by the community mobilizers.\n\nSEVA recommends beginning with a paper-to-digital matrix where every field column is mapped to a specific operational outcome.`,
     format: 'Guide',
-    download_name: 'SEVA_Rural_MIS_Framework_2026.pdf',
+    download_name: 'SEVA_Rural_MIS_Framework_2026.doc',
     read_time: '7 min read',
     published_date: '2026-09-10',
   },
@@ -245,7 +245,7 @@ export const INITIAL_RESOURCES: ResourceItem[] = [
     summary: 'Practical measures to protect community beneficiary data, prevent ransomware, and securely manage email accounts on shared office computers.',
     content: `Rural development organizations often handle sensitive demographic, health, and economic data of vulnerable communities. Yet, many organizations use shared laptops with no passwords or share generic email passwords on sticky notes.\n\nImmediate security checklist for NGOs:\n- Enable Two-Factor Authentication (2FA) on all organizational Google and banking accounts.\n- Segregate beneficiary identifiable data (Aadhaar, bank account details) with role-based access.\n- Establish an automated weekly backup policy to external encrypted drives or secure cloud storage.\n- Train field staff never to click suspicious links or download unverified APK files onto field survey tablets.`,
     format: 'Guide',
-    download_name: 'NGO_Digital_Security_Checklist.pdf',
+    download_name: 'NGO_Digital_Security_Checklist.doc',
     read_time: '5 min read',
     published_date: '2026-08-01',
   },
@@ -267,7 +267,7 @@ export const INITIAL_RESOURCES: ResourceItem[] = [
     summary: 'How small organizations can design clean, credible websites that showcase genuine community work without looking like generic corporate agencies.',
     content: `A credible grassroots website should never look like an IT agency or a glossy marketing brochure. Donors and community partners look for four things:\n1. Legal Transparency: Clear display of 12A, 80G, CSR-1, audited balance sheets, and annual reports.\n2. Clear Geographical Scope: Exact map and list of blocks, talukas, and villages covered.\n3. Human-Centred Stories: Real community voices and field photographs showing real people in dignified settings.\n4. Clean Contact Information: Physical office address, landline/mobile numbers, and official institutional email address.`,
     format: 'Guide',
-    download_name: 'NGO_Website_Best_Practices_Guide.pdf',
+    download_name: 'NGO_Website_Best_Practices_Guide.doc',
     read_time: '8 min read',
     published_date: '2026-06-11',
   },
@@ -278,9 +278,64 @@ export const INITIAL_RESOURCES: ResourceItem[] = [
     summary: 'Comparative analysis of mobile-based survey tools (Kobo, ODK, custom PWA) vs. centralized spreadsheets based on budget and staff capacity.',
     content: `Choosing the right data collection method depends on your team's geography, device availability, and frequency of data submission. This guide walks you through the trade-offs between open-source tools like KoboToolbox, ODK, Google Forms, and custom offline-first web apps.`,
     format: 'Toolkit',
-    download_name: 'Field_Data_Collection_Decision_Matrix.pdf',
+    download_name: 'Field_Data_Collection_Decision_Matrix.xlsx',
     read_time: '6 min read',
     published_date: '2026-04-18',
+  },
+  {
+    id: 'res-6',
+    title: 'Grassroots Digital Communication & Social Media Toolkit for Rural NGOs',
+    category: 'Digital Communication',
+    summary: 'Practical communication plan, monthly editorial calendar, and community storytelling framework designed for rural organisations without dedicated marketing staff.',
+    content: `Grassroots organisations do extraordinary work in villages, but often struggle to communicate their social impact beyond their immediate taluka.\n\nKey components of this toolkit:\n1. 30-Day Grassroots Editorial Calendar: Weekly themes (Farmer Testimonial, Field Photo Story, Milestones, Community Voice).\n2. WhatsApp Community Engagement Rules: How to run farmer and SHG broadcast channels without spamming or violating privacy.\n3. Donor Newsletter Template: Quarterly 2-page concise bulletin covering physical outputs, audited utilization, and verified beneficiary stories.\n4. Visual Guidelines: Best practices for taking dignified, high-resolution photographs in sunlight with affordable smartphones.`,
+    format: 'Toolkit',
+    download_name: 'Grassroots_Digital_Communication_Toolkit.xlsx',
+    read_time: '6 min read',
+    published_date: '2026-09-28',
+  },
+  {
+    id: 'res-7',
+    title: 'Rural Project Monitoring & Milestone Verification Framework',
+    category: 'Project Monitoring',
+    summary: 'Standardised indicator tracking sheet, field milestone verification checklists, and variance reporting matrices for CSR and philanthropic grant compliance.',
+    content: `Effective project monitoring bridges the gap between planned targets and ground realities.\n\nFramework highlights:\n1. Milestone Tracking Matrix: Map 9 implementation stages with quantifiable indicators.\n2. Variance Analysis: Automatically calculate discrepancies between planned vs. actual beneficiary reach.\n3. Ground Verification Protocol: Checklist for field supervisors to cross-verify registers against geotagged photographs.\n4. Social Audit Mechanism: Participatory Gram Sabha review sheets to share progress transparently with village community members.`,
+    format: 'Template',
+    download_name: 'SEVA_Rural_Project_Monitoring_Tracker.xlsx',
+    read_time: '5 min read',
+    published_date: '2026-09-15',
+  },
+  {
+    id: 'res-8',
+    title: 'Digital Literacy & Smartphone Field Training Manual for Rural Animators',
+    category: 'Capacity Building',
+    summary: 'Bilingual training curriculum and step-by-step participatory modules to train barefoot village coordinators in smartphone data entry, offline sync, and data ethics.',
+    content: `Training rural animators requires empathy, patience, and vernacular instructional design.\n\n6 Core Modules in this manual:\nModule 1: Smartphone Fundamentals (Touchscreen handling, battery management in power-scarce villages, storage cleanup).\nModule 2: Vernacular Data Entry (Using Marathi/Hindi keyboard, voice-typing for field observations).\nModule 3: Photographic Documentation (Capturing legible receipts, geo-tagged crop yields, and check-dam water levels).\nModule 4: Offline Synchronization (Navigating areas with zero cellular reception and syncing safely when back at the block office).\nModule 5: Data Privacy & Ethics (Seeking oral consent, safeguarding women's contact information).\nModule 6: Troubleshooting Field Errors (Fixing duplicate entries and recovery procedures).`,
+    format: 'Guide',
+    download_name: 'Field_Animators_Digital_Training_Manual.doc',
+    read_time: '10 min read',
+    published_date: '2026-08-20',
+  },
+  {
+    id: 'res-9',
+    title: 'Appropriate Rural Technology Selection & Feasibility Matrix',
+    category: 'Technology for Rural Development',
+    summary: 'Decision matrix comparing cloud vs offline-first architectures, low-cost solar hardware, and resilient database choices tailored to rural Indian power and connectivity realities.',
+    content: `Technology in rural development must be appropriate, resilient, and maintainable by the local team.\n\nCriteria evaluated in this matrix:\n1. Cellular Connectivity Tolerance: Systems that function 100% offline with peer-to-peer or local SQLite storage.\n2. Power Resilience: Hardware compatible with 12V solar DC setups and resistant to extreme village dust and heat.\n3. Operating Cost: Zero recurring monthly SaaS seat licenses; preference for open-source or self-hosted stacks.\n4. Total Cost of Ownership (TCO): Breakdown under the SEVA 70-30 model (70% SEVA technical subsidy, 30% NGO investment).\n5. Handover Autonomy: Ensuring the grassroots team owns 100% of the code, database schemas, and administrator credentials.`,
+    format: 'Toolkit',
+    download_name: 'Appropriate_Rural_Technology_Matrix.xlsx',
+    read_time: '8 min read',
+    published_date: '2026-07-28',
+  },
+  {
+    id: 'res-10',
+    title: 'SEVA Official Technology Support Agreement & 70-30 Budget Breakup Model',
+    category: 'Documentation and Reporting',
+    summary: 'Official template of the Technology Support Agreement between SEVA (First Party) and Grassroots Partner (Second Party), including itemized budget heads, 70% SEVA support, and 30% partner contribution terms.',
+    content: `Official bipartite agreement draft governing the Grassroots Technology Support Programme.\n\nIncludes:\n- Purpose of Agreement and institutional capacity building scope\n- 9 Standard Milestone stages from Needs Assessment to Final Handover\n- Itemized Budget Heads (Mobile App, Web MIS, Institutional Website, Capacity Training, Server Maintenance)\n- 70% SEVA Support vs 30% Partner Contribution breakdown\n- Intellectual Property ownership and code handover guarantees\n- Bank transfer instructions and dispute resolution jurisdiction (Yavatmal, Maharashtra).`,
+    format: 'Template',
+    download_name: 'SEVA_Technology_Support_Agreement_2026.doc',
+    read_time: '12 min read',
+    published_date: '2026-10-01',
   },
 ];
 
@@ -1492,7 +1547,23 @@ export class SevaStore {
 
   // Knowledge Resources (Part 11 & Part 14 CMS)
   static getResources(): ResourceItem[] {
-    return this.load<ResourceItem[]>(STORAGE_KEYS.RESOURCES, INITIAL_RESOURCES);
+    const list = this.load<ResourceItem[]>(STORAGE_KEYS.RESOURCES, INITIAL_RESOURCES);
+    const existingIds = new Set(list.map((r) => r.id));
+    let hasAdditions = false;
+
+    // Merge any missing core resources (e.g. newly restored 4 sections)
+    for (const item of INITIAL_RESOURCES) {
+      if (!existingIds.has(item.id)) {
+        list.push(item);
+        existingIds.add(item.id);
+        hasAdditions = true;
+      }
+    }
+
+    if (hasAdditions) {
+      this.save(STORAGE_KEYS.RESOURCES, list);
+    }
+    return list;
   }
 
   static saveResource(resource: ResourceItem): void {

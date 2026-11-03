@@ -81,13 +81,16 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
   return (
     <div className="space-y-8">
       {/* 1. Quick Actions Bar (झटपट कृती - सोपा व सुटसुटीत डॅशबोर्ड) */}
-      <div className="bg-gradient-to-r from-[#184E34] to-[#0F3825] rounded-3xl p-6 text-white shadow-sm space-y-4">
+      <div
+        className="rounded-3xl p-6 text-white shadow-md space-y-4 border border-[#1E573B]"
+        style={{ backgroundColor: '#143E29' }}
+      >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <span className="text-xs font-mono font-semibold uppercase tracking-widest text-emerald-300">
+            <span className="text-xs font-mono font-bold uppercase tracking-widest text-emerald-300">
               प्रशासकीय नियंत्रण केंद्र · Central Control
             </span>
-            <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white mt-0.5">
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white mt-0.5">
               SEVA तंत्रज्ञान सहाय्य कार्यक्रम डॅशबोर्ड
             </h2>
           </div>
@@ -95,65 +98,71 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
             {onOpenExcelImport && (
               <button
                 onClick={onOpenExcelImport}
-                className="px-3.5 py-1.5 rounded-full bg-amber-400 hover:bg-amber-300 text-stone-900 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+                className="px-4 py-2 rounded-full bg-amber-400 hover:bg-amber-300 text-stone-900 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-[0.98]"
                 title="Excel फाईलवरून डेटा अपलोड करा"
               >
                 <UploadCloud className="w-4 h-4 text-stone-900" />
                 <span>Excel डेटा अपलोड करा</span>
               </button>
             )}
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-900/80 border border-emerald-500/50 text-emerald-100 text-xs font-bold">
+            <span
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-400/60 text-emerald-100 text-xs font-bold"
+              style={{ backgroundColor: '#0B3320' }}
+            >
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
               <span>सिस्टम कार्यरत</span>
             </span>
           </div>
         </div>
 
-        {/* 5 Quick Action Cards */}
+        {/* 5 Quick Action Cards (High Contrast, Solid Dark Emerald Backgrounds, Vibrant Accents) */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pt-1">
           <button
             onClick={() => onNavigateTab('applications')}
-            className="p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 text-left transition-all cursor-pointer group active:scale-[0.98]"
+            className="p-4 rounded-2xl border border-emerald-500/40 text-left transition-all cursor-pointer group active:scale-[0.98] shadow-xs hover:border-amber-400"
+            style={{ backgroundColor: '#0E3020' }}
           >
             <div className="flex items-center justify-between mb-2">
               <FileText className="w-5 h-5 text-amber-300" />
               {counts.new > 0 && (
-                <span className="px-2 py-0.5 rounded-full bg-amber-400 text-stone-900 text-[10px] font-extrabold">
+                <span className="px-2 py-0.5 rounded-full bg-amber-400 text-stone-900 text-[10px] font-black">
                   {counts.new} नवीन
                 </span>
               )}
             </div>
-            <div className="text-sm font-bold text-white group-hover:text-emerald-100">
+            <div className="text-sm font-extrabold text-white group-hover:text-amber-300">
               नवीन अर्ज तपासा
             </div>
-            <div className="text-[11px] text-emerald-200/80">
+            <div className="text-[11px] text-emerald-100 font-medium">
               {counts.total} पैकी {counts.new} तपासणी बाकी
             </div>
           </button>
 
           <button
             onClick={() => onNavigateTab('inquiries')}
-            className="p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 text-left transition-all cursor-pointer group active:scale-[0.98]"
+            className="p-4 rounded-2xl border border-emerald-500/40 text-left transition-all cursor-pointer group active:scale-[0.98] shadow-xs hover:border-amber-400"
+            style={{ backgroundColor: '#0E3020' }}
           >
             <div className="flex items-center justify-between mb-2">
               <MessageSquare className="w-5 h-5 text-amber-300" />
               {SevaStore.getContactMessages().filter((m) => m.status === 'Unread').length > 0 && (
-                <span className="px-2 py-0.5 rounded-full bg-amber-400 text-stone-900 text-[10px] font-extrabold">
+                <span className="px-2 py-0.5 rounded-full bg-amber-400 text-stone-900 text-[10px] font-black">
                   {SevaStore.getContactMessages().filter((m) => m.status === 'Unread').length} नवीन
                 </span>
               )}
             </div>
-            <div className="text-sm font-bold text-white group-hover:text-emerald-100">
+            <div className="text-sm font-extrabold text-white group-hover:text-amber-300">
               चौकशी संदेश (Inquiry)
             </div>
-            <div className="text-[11px] text-emerald-200/80">
+            <div className="text-[11px] text-emerald-100 font-medium">
               {SevaStore.getContactMessages().length} संदेश प्राप्त
             </div>
           </button>
 
           <button
             onClick={() => onNavigateTab('meetings')}
-            className="p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 text-left transition-all cursor-pointer group active:scale-[0.98]"
+            className="p-4 rounded-2xl border border-emerald-500/40 text-left transition-all cursor-pointer group active:scale-[0.98] shadow-xs hover:border-emerald-300"
+            style={{ backgroundColor: '#0E3020' }}
           >
             <div className="flex items-center justify-between mb-2">
               <Calendar className="w-5 h-5 text-emerald-300" />
@@ -161,17 +170,18 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
                 {meetings.length}
               </span>
             </div>
-            <div className="text-sm font-bold text-white group-hover:text-emerald-100">
+            <div className="text-sm font-extrabold text-white group-hover:text-emerald-200">
               बैठका व्यवस्थापन
             </div>
-            <div className="text-[11px] text-emerald-200/80">
+            <div className="text-[11px] text-emerald-100 font-medium">
               शेड्यूल केलेल्या संवादांची यादी
             </div>
           </button>
 
           <button
             onClick={() => onNavigateTab('projects')}
-            className="p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 text-left transition-all cursor-pointer group active:scale-[0.98]"
+            className="p-4 rounded-2xl border border-emerald-500/40 text-left transition-all cursor-pointer group active:scale-[0.98] shadow-xs hover:border-sky-300"
+            style={{ backgroundColor: '#0E3020' }}
           >
             <div className="flex items-center justify-between mb-2">
               <PlayCircle className="w-5 h-5 text-sky-300" />
@@ -179,45 +189,52 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
                 {counts.ongoing}
               </span>
             </div>
-            <div className="text-sm font-bold text-white group-hover:text-emerald-100">
+            <div className="text-sm font-extrabold text-white group-hover:text-sky-200">
               सक्रिय प्रकल्प ट्रॅकर
             </div>
-            <div className="text-[11px] text-emerald-200/80">
+            <div className="text-[11px] text-emerald-100 font-medium">
               कामाची प्रगती व टप्पे
             </div>
           </button>
 
           <button
             onClick={() => onNavigateTab('cms')}
-            className="p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 text-left transition-all cursor-pointer group active:scale-[0.98]"
+            className="p-4 rounded-2xl border border-emerald-500/40 text-left transition-all cursor-pointer group active:scale-[0.98] shadow-xs hover:border-purple-300"
+            style={{ backgroundColor: '#0E3020' }}
           >
             <div className="flex items-center justify-between mb-2">
               <Layers className="w-5 h-5 text-purple-300" />
               <span className="text-xs text-purple-200 font-bold">CMS</span>
             </div>
-            <div className="text-sm font-bold text-white group-hover:text-emerald-100">
+            <div className="text-sm font-extrabold text-white group-hover:text-purple-200">
               केस स्टडी व सामग्री
             </div>
-            <div className="text-[11px] text-emerald-200/80">
+            <div className="text-[11px] text-emerald-100 font-medium">
               संस्थाचालक फोटो व आकडेवारी
             </div>
           </button>
         </div>
 
         {/* Excel Import Feature Banner */}
-        <div className="bg-emerald-950/80 border border-emerald-600/40 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2">
+        <div
+          className="border border-emerald-500/50 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2"
+          style={{ backgroundColor: '#0A2619' }}
+        >
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-800/80 text-emerald-200 flex items-center justify-center shrink-0 border border-emerald-500/30">
+            <div
+              className="w-10 h-10 rounded-xl text-emerald-200 flex items-center justify-center shrink-0 border border-emerald-400/40"
+              style={{ backgroundColor: '#143E29' }}
+            >
               <FileSpreadsheet className="w-5 h-5 text-emerald-300" />
             </div>
             <div>
-              <div className="text-sm font-bold text-white flex items-center gap-2">
+              <div className="text-sm font-extrabold text-white flex items-center gap-2">
                 <span>Excel Sheet द्वारे डेटा बल्क अपलोड करण्याची सुविधा</span>
-                <span className="px-2 py-0.5 rounded-full bg-amber-400 text-stone-900 text-[10px] font-extrabold">
+                <span className="px-2 py-0.5 rounded-full bg-amber-400 text-stone-900 text-[10px] font-black">
                   नवीन
                 </span>
               </div>
-              <p className="text-xs text-emerald-200/80 mt-0.5">
+              <p className="text-xs text-emerald-100/90 mt-0.5 font-medium">
                 एकाच वेळी अनेक संस्थांचा डेटा थेट Excel (.xlsx, .xls) किंवा CSV फाईलवरून सिस्टीममध्ये अपलोड करा. नमुना शीट डाउनलोड करा व वापरा.
               </p>
             </div>
@@ -226,7 +243,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
             {onOpenExcelImport ? (
               <button
                 onClick={onOpenExcelImport}
-                className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-900 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+                className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-900 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-[0.98]"
               >
                 <UploadCloud className="w-4 h-4 text-stone-900" />
                 <span>Excel Sheet अपलोड करा</span>
@@ -234,7 +251,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
             ) : (
               <button
                 onClick={() => onNavigateTab('applications')}
-                className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-900 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+                className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-900 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-[0.98]"
               >
                 <UploadCloud className="w-4 h-4 text-stone-900" />
                 <span>अर्ज विभागात जा</span>
@@ -296,8 +313,11 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
             <span className="text-[11px] text-emerald-700 font-semibold block">30% करार निश्चित</span>
           </div>
 
-          {/* Card 5: Active Projects (Forest Green Gradient) */}
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-[#184E34] to-[#0F3825] text-white border border-[#184E34] border-l-4 border-l-emerald-400 shadow-sm space-y-1 hover:shadow-md transition-all">
+          {/* Card 5: Active Projects (Forest Green Card) */}
+          <div
+            className="p-5 rounded-2xl text-white border border-[#184E34] border-l-4 border-l-emerald-400 shadow-sm space-y-1 hover:shadow-md transition-all"
+            style={{ backgroundColor: '#143E29' }}
+          >
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-emerald-200 block">सक्रिय प्रकल्प (Active)</span>
               <PlayCircle className="w-4 h-4 text-emerald-300" />

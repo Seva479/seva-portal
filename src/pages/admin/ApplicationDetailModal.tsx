@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Check,
   Trash2,
+  FileCheck,
 } from 'lucide-react';
 import { Application, ApplicationStatus, PriorityLevel, ApplicationReview } from '../../types';
 import { SevaStore } from '../../services/store';
@@ -28,6 +29,7 @@ interface ApplicationDetailModalProps {
   onScheduleMeeting: (app: Application) => void;
   onComposeEmail: (app: Application) => void;
   onConvertToProject: (app: Application) => void;
+  onCreateAgreement?: (app: Application) => void;
   onDeleteApp?: (appId: string) => void;
 }
 
@@ -38,6 +40,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
   onScheduleMeeting,
   onComposeEmail,
   onConvertToProject,
+  onCreateAgreement,
   onDeleteApp,
 }) => {
   const [activeTab, setActiveTab] = useState<'details' | 'internal_review' | 'workflow' | 'history'>('details');
@@ -288,6 +291,18 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
               <Mail className="w-3.5 h-3.5 text-stone-600" />
               <span>Send Email</span>
             </button>
+
+            {onCreateAgreement && (
+              <button
+                type="button"
+                onClick={() => onCreateAgreement(application)}
+                className="px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-[#184E34] text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                title="या संस्थेसाठी अधिकृत करारपत्र व बजेट जनरेट करा"
+              >
+                <FileCheck className="w-3.5 h-3.5 text-emerald-700" />
+                <span>करार व बजेट तयार करा</span>
+              </button>
+            )}
 
             {application.status === 'Approved' && (
               <button

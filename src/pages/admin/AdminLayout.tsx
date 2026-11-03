@@ -14,11 +14,13 @@ import {
   UserCheck,
   ChevronRight,
   MessageSquare,
+  FileCheck,
 } from 'lucide-react';
 import { SevaStore, ADMIN_USERS } from '../../services/store';
 import { Application, UserProfile, Meeting, ProgrammeProject } from '../../types';
 import { AdminOverview } from './AdminOverview';
 import { ApplicationsManager } from './ApplicationsManager';
+import { AgreementBudgetManager } from './AgreementBudgetManager';
 import { InquiriesManager } from './InquiriesManager';
 import { ApplicationDetailModal } from './ApplicationDetailModal';
 import { MeetingsManager } from './MeetingsManager';
@@ -34,7 +36,7 @@ interface AdminLayoutProps {
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ onExitAdmin }) => {
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'applications' | 'inquiries' | 'meetings' | 'emails' | 'projects' | 'cms' | 'database'
+    'overview' | 'applications' | 'agreements' | 'inquiries' | 'meetings' | 'emails' | 'projects' | 'cms' | 'database'
   >('overview');
 
   const [currentUser, setCurrentUser] = useState<UserProfile>(SevaStore.getCurrentUser());
@@ -177,6 +179,18 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onExitAdmin }) => {
           </button>
 
           <button
+            onClick={() => setActiveTab('agreements')}
+            className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'agreements'
+                ? 'bg-[#184E34] text-white shadow-xs'
+                : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+            }`}
+          >
+            <FileCheck className="w-3.5 h-3.5 text-amber-500" />
+            <span>करार व बजेट (Agreement &amp; Budget)</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('inquiries')}
             className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer flex items-center gap-2 relative ${
               activeTab === 'inquiries'
@@ -281,6 +295,17 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onExitAdmin }) => {
           />
         )}
 
+        {activeTab === 'agreements' && (
+          <AgreementBudgetManager
+            applications={applications}
+            onSelectApplicationForDetail={(app) => setSelectedApp(app)}
+            onNavigateToEmails={(app) => {
+              setPreselectedAppForEmail(app);
+              setActiveTab('emails');
+            }}
+          />
+        )}
+
         {activeTab === 'inquiries' && (
           <InquiriesManager onRefresh={refreshAll} />
         )}
@@ -322,6 +347,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onExitAdmin }) => {
           onScheduleMeeting={handleScheduleMeetingFromApp}
           onComposeEmail={handleComposeEmailFromApp}
           onConvertToProject={handleConvertToProjectFromApp}
+          onCreateAgreement={(app) => {
+            setSelectedApp(null);
+            setActiveTab('agreements');
+          }}
           onDeleteApp={() => {
             setSelectedApp(null);
             refreshAll();

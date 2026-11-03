@@ -299,3 +299,59 @@ export interface OrganisationSettings {
   announcement_banner?: string;
   enable_applications: boolean;
 }
+
+// Budget Head Item from official Breakup
+export interface BudgetHeadItem {
+  id: number;
+  head_name: string;
+  description: string;
+  total_amount: number;
+  seva_support: number; // 70%
+  partner_contribution: number; // 30%
+  is_selected?: boolean;
+}
+
+// Technology Support Programme Agreement
+export interface TechnologySupportAgreement {
+  id: string; // e.g. SEVA/TSP/2026/001
+  agreement_date: string;
+  place_of_execution: string;
+  application_id?: string;
+
+  // First Party (SEVA)
+  first_party_name: string;
+  first_party_address: string;
+  first_party_representative: string;
+  first_party_designation: string;
+
+  // Second Party (Participating Organisation)
+  second_party_name: string;
+  second_party_address: string;
+  second_party_representative: string;
+  second_party_designation: string;
+  second_party_registration_number: string;
+  second_party_email: string;
+  second_party_phone: string;
+
+  // Scope & Financial Terms
+  programme_duration: string;
+  payment_deadline: string;
+  include_maintenance_charge: boolean;
+  annual_maintenance_charge: number; // ₹8,700
+  selected_budget_heads: BudgetHeadItem[];
+  total_annual_cost: number;
+  seva_supported_cost: number;
+  partner_contribution_cost: number;
+
+  // Bank Details
+  bank_holder_name: string;
+  bank_account_number: string;
+  bank_account_type: string;
+  bank_name: string;
+  bank_ifsc: string;
+  bank_branch: string;
+
+  status: 'Draft' | 'Sent for Signature' | 'Signed & Executed';
+  created_at: string;
+  updated_at: string;
+}

@@ -10,8 +10,10 @@ import {
   OrganisationSettings,
   ProgrammeProject,
   ResourceItem,
+  TechnologySupportAgreement,
   UserProfile,
 } from '../types';
+import { INITIAL_AGREEMENT } from '../data/budgetBreakup';
 
 // Default Organisation Settings
 export const DEFAULT_ORG_SETTINGS: OrganisationSettings = {
@@ -830,10 +832,37 @@ const STORAGE_KEYS = {
   EMAIL_LOGS: 'seva_email_logs_v1',
   EMAIL_TEMPLATES: 'seva_email_templates_v1',
   EMAIL_SIGNATURE: 'seva_email_signature_v1',
+  AGREEMENTS: 'seva_agreements_v1',
   PROJECTS: 'seva_projects_v1',
   CONTACT_MESSAGES: 'seva_contact_messages_v1',
   CURRENT_USER: 'seva_current_user_v1',
 };
+
+// In-memory fallback map for mobile browsers / WebView / private mode when localStorage is restricted
+const memoryFallbackMap = new Map<string, string>();
+
+function safeStorageGet(key: string): string | null {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const val = window.localStorage.getItem(key);
+      if (val !== null) return val;
+    }
+  } catch (e) {
+    // Suppress mobile private browsing SecurityError
+  }
+  return memoryFallbackMap.get(key) ?? null;
+}
+
+function safeStorageSet(key: string, value: string): void {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(key, value);
+    }
+  } catch (e) {
+    // Suppress quota exceeded or security error
+  }
+  memoryFallbackMap.set(key, value);
+}
 
 // Available Admin Users for role-based testing
 export const ADMIN_USERS: UserProfile[] = [
@@ -865,7 +894,7 @@ export class SevaStore {
   // Load helper
   private static load<T>(key: string, fallback: T): T {
     try {
-      const stored = localStorage.getItem(key);
+      const stored = safeStorageGet(key);
       if (stored) {
         return JSON.parse(stored);
       }
@@ -878,7 +907,7 @@ export class SevaStore {
   // Save helper
   private static save<T>(key: string, data: T): void {
     try {
-      localStorage.setItem(key, JSON.stringify(data));
+      safeStorageSet(key, JSON.stringify(data));
     } catch (e) {
       console.warn(`Failed writing ${key} to storage:`, e);
     }
@@ -1438,5 +1467,34 @@ export class SevaStore {
 
   static setCurrentUser(user: UserProfile): void {
     this.save(STORAGE_KEYS.CURRENT_USER, user);
+  }
+
+  // Technology Support Agreements & Budget Generator
+  static getAgreements(): TechnologySupportAgreement[] {
+    return this.load<TechnologySupportAgreement[]>(STORAGE_KEYS.AGREEMENTS, [INITIAL_AGREEMENT]);
+  }
+
+  static getAgreementById(id: string): TechnologySupportAgreement | undefined {
+    const list = this.getAgreements();
+    return list.find((a) => a.id === id);
+  }
+
+  static saveAgreement(agreement: TechnologySupportAgreement): void {
+    const list = this.getAgreements();
+    const idx = list.findIndex((a) => a.id === agreement.id);
+    let updated: TechnologySupportAgreement[];
+    if (idx >= 0) {
+      updated = [...list];
+      updated[idx] = { ...agreement, updated_at: new Date().toISOString() };
+    } else {
+      updated = [{ ...agreement, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }, ...list];
+    }
+    this.save(STORAGE_KEYS.AGREEMENTS, updated);
+  }
+
+  static deleteAgreement(id: string): void {
+    const list = this.getAgreements();
+    const updated = list.filter((a) => a.id !== id);
+    this.save(STORAGE_KEYS.AGREEMENTS, updated);
   }
 }

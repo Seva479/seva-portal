@@ -979,32 +979,15 @@ export class SevaStore {
       }
     }
 
-    // Step 2: Read from primary storage key
-    const primaryRaw = safeStorageGet(STORAGE_KEYS.APPLICATIONS);
-    if (primaryRaw) {
-      try {
-        const parsed = JSON.parse(primaryRaw);
-        if (Array.isArray(parsed)) {
-          for (const item of parsed) {
-            if (item && item.id) {
-              map.set(item.id, item);
-            }
-          }
-        }
-      } catch (e) {
-        console.warn('Error reading primary applications:', e);
-      }
-    }
-
-    // Step 3: Check all known legacy/alternative keys where user work may reside
+    // Step 2: Check all known legacy/alternative keys FIRST so older data is loaded as a baseline
     const legacyKeys = [
-      'seva_applications',
-      'applications',
-      'seva_apps',
       'seva_applications_backup',
       'seva_applications_v0',
       'seva_org_applications',
       'seva_applications_store',
+      'applications',
+      'seva_apps',
+      'seva_applications',
     ];
 
     for (const lk of legacyKeys) {
@@ -1025,7 +1008,7 @@ export class SevaStore {
       }
     }
 
-    // Step 4: Scan browser localStorage for any keys with application records
+    // Step 3: Scan browser localStorage for any other keys with application records
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         for (let i = 0; i < window.localStorage.length; i++) {
@@ -1056,6 +1039,25 @@ export class SevaStore {
       // Ignore private browsing restrictions
     }
 
+    // Step 4: READ PRIMARY STORAGE KEY LAST (HIGHEST PRECEDENCE)
+    // Primary storage key (seva_applications_v1) contains the user's latest submissions and updates!
+    const primaryRaw = safeStorageGet(STORAGE_KEYS.APPLICATIONS);
+    if (primaryRaw) {
+      try {
+        const parsed = JSON.parse(primaryRaw);
+        if (Array.isArray(parsed)) {
+          for (const item of parsed) {
+            if (item && item.id) {
+              // Overwrite with primary storage key's newest data
+              map.set(item.id, item);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Error reading primary applications:', e);
+      }
+    }
+
     const merged = Array.from(map.values());
 
     // Synchronize to primary and backup keys
@@ -1072,8 +1074,22 @@ export class SevaStore {
 
   static submitApplication(newAppData: Omit<Application, 'id' | 'created_at' | 'updated_at' | 'status' | 'priority' | 'status_history' | 'documents'> & { documents?: any[] }): Application {
     const list = this.getApplications();
-    const count = list.length + 1;
-    const formattedId = `SEVA-2026-${String(count).padStart(4, '0')}`;
+    
+    // Calculate next collision-free sequence number based on existing IDs
+    let maxNum = 0;
+    for (const a of list) {
+      if (a && a.id) {
+        const match = a.id.match(/SEVA-2026-(\d+)/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (!isNaN(num) && num > maxNum) {
+            maxNum = num;
+          }
+        }
+      }
+    }
+    const nextSeq = Math.max(maxNum + 1, list.length + 1);
+    const formattedId = `SEVA-2026-${String(nextSeq).padStart(4, '0')}`;
     const now = new Date().toISOString();
 
     const application: Application = {
@@ -1097,8 +1113,25 @@ export class SevaStore {
       ],
     };
 
-    const updatedList = [application, ...list];
+    const updatedList = [application, ...list.filter((a) => a.id !== formattedId)];
+    
+    // Save to primary key and backup keys
     this.save(STORAGE_KEYS.APPLICATIONS, updatedList);
+    safeStorageSet('seva_applications', JSON.stringify(updatedList));
+    safeStorageSet('applications', JSON.stringify(updatedList));
+
+    // Dispatch window event so any open admin console updates immediately
+    if (typeof window !== 'undefined') {
+      try {
+        window.dispatchEvent(
+          new CustomEvent('seva_store_updated', {
+            detail: { type: 'application_submitted', app: application },
+          })
+        );
+      } catch (e) {
+        // ignore
+      }
+    }
 
     // Also log automatic acknowledgement email
     this.sendEmail({
@@ -1112,6 +1145,37 @@ export class SevaStore {
     });
 
     return application;
+  }
+
+  static syncRemoteApplications(remoteApps: Application[]): { mergedCount: number; newCount: number } {
+    if (!remoteApps || !Array.isArray(remoteApps) || remoteApps.length === 0) {
+      return { mergedCount: 0, newCount: 0 };
+    }
+    const local = this.getApplications();
+    const map = new Map<string, Application>();
+    for (const app of local) {
+      if (app && app.id) map.set(app.id, app);
+    }
+    let newCount = 0;
+    for (const rem of remoteApps) {
+      if (rem && rem.id) {
+        if (!map.has(rem.id)) {
+          newCount++;
+        }
+        const existing = map.get(rem.id);
+        if (
+          !existing ||
+          new Date(rem.updated_at || rem.created_at).getTime() >=
+            new Date(existing.updated_at || existing.created_at).getTime()
+        ) {
+          map.set(rem.id, { ...existing, ...rem });
+        }
+      }
+    }
+    const merged = Array.from(map.values());
+    safeStorageSet(STORAGE_KEYS.APPLICATIONS, JSON.stringify(merged));
+    safeStorageSet('seva_applications', JSON.stringify(merged));
+    return { mergedCount: merged.length, newCount };
   }
 
   static bulkImportApplications(importedList: Partial<Application>[]): { successCount: number; importedApps: Application[] } {

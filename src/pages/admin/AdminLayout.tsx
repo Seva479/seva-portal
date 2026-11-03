@@ -29,6 +29,7 @@ import { ProjectsTracker } from './ProjectsTracker';
 import { ContentManager } from './ContentManager';
 import { DatabaseSchemaModal } from './DatabaseSchemaModal';
 import { ExcelImportModal } from './ExcelImportModal';
+import { fetchRemoteApplications, isSupabaseConfigured } from '../../services/supabase';
 
 interface AdminLayoutProps {
   onExitAdmin: () => void;
@@ -57,6 +58,37 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onExitAdmin }) => {
     setMeetings(SevaStore.getMeetings());
     setContactMessages(SevaStore.getContactMessages());
   };
+
+  // Auto-refresh when applications are submitted in another tab, window, or on the portal
+  React.useEffect(() => {
+    const handleStoreChange = () => {
+      refreshAll();
+    };
+
+    window.addEventListener('storage', handleStoreChange);
+    window.addEventListener('seva_store_updated', handleStoreChange);
+
+    // Initial check & auto-pull from Supabase if configured
+    if (isSupabaseConfigured()) {
+      fetchRemoteApplications()
+        .then((remoteApps) => {
+          if (remoteApps && remoteApps.length > 0) {
+            const res = SevaStore.syncRemoteApplications(remoteApps);
+            if (res.newCount > 0) {
+              refreshAll();
+            }
+          }
+        })
+        .catch((e) => {
+          console.warn('Background remote sync skipped:', e);
+        });
+    }
+
+    return () => {
+      window.removeEventListener('storage', handleStoreChange);
+      window.removeEventListener('seva_store_updated', handleStoreChange);
+    };
+  }, []);
 
   const handleUpdateApp = (updated: Application) => {
     refreshAll();

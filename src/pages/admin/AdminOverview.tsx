@@ -420,16 +420,26 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
         </div>
 
         <div className="divide-y divide-slate-100">
-          {applications.slice(0, 5).map((app) => (
+          {[...applications]
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, 6)
+            .map((app) => (
             <div
               key={app.id}
-              className="p-4 sm:px-6 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              className={`p-4 sm:px-6 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                app.status === 'New Application' ? 'bg-emerald-50/40' : ''
+              }`}
             >
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-mono font-bold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200">
                     {app.id}
                   </span>
+                  {app.status === 'New Application' && (
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-400 text-stone-900 shadow-2xs">
+                      ★ नवीन अर्ज (New)
+                    </span>
+                  )}
                   <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
                     app.priority === 'High' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
                   }`}>

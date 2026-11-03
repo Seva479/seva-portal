@@ -13,10 +13,13 @@ import {
   UploadCloud,
   Trash2,
   AlertTriangle,
+  RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 import { Application, ApplicationStatus, PriorityLevel } from '../../types';
 import { ExcelImportModal } from './ExcelImportModal';
 import { SevaStore } from '../../services/store';
+import { fetchRemoteApplications, isSupabaseConfigured } from '../../services/supabase';
 
 interface ApplicationsManagerProps {
   applications: Application[];
@@ -177,32 +180,84 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
     setTimeout(() => setDeleteToast(null), 4000);
   };
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshToast, setRefreshToast] = useState<string | null>(null);
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    if (isSupabaseConfigured()) {
+      try {
+        const remote = await fetchRemoteApplications();
+        if (remote && remote.length > 0) {
+          SevaStore.syncRemoteApplications(remote);
+        }
+      } catch (e) {
+        console.warn('Manual remote sync failed:', e);
+      }
+    }
+    onRefresh?.();
+    setIsRefreshing(false);
+    setRefreshToast(`डेटा रिफ्रेश झाला! एकूण ${applications.length} अर्ज नोंदवलेले आहेत.`);
+    setTimeout(() => setRefreshToast(null), 3000);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Toast Notification */}
+      {(deleteToast || refreshToast) && (
+        <div className="p-3 bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md flex items-center justify-between">
+          <span>{deleteToast || refreshToast}</span>
+          <button
+            onClick={() => {
+              setDeleteToast(null);
+              setRefreshToast(null);
+            }}
+            className="text-white hover:text-amber-200 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-stone-900 tracking-tight">
-            Master Application Registry
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-stone-900 tracking-tight">
+              Master Application Registry
+            </h2>
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-[#0B6643] text-xs font-bold border border-emerald-300">
+              {applications.length} अर्ज
+            </span>
+          </div>
           <p className="text-xs text-stone-500">
             Manage, triage, score, and transition grassroots organisation submissions
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            className="px-3 py-2 rounded-xl border border-stone-300 hover:bg-stone-50 text-stone-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs active:scale-[0.98] disabled:opacity-50"
+            title="नवीन आलेले अर्ज व डेटा रिफ्रेश करा"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-[#0B6643] ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>डेटा रिफ्रेश (Refresh)</span>
+          </button>
+
           <button
             onClick={() => setIsImportModalOpen(true)}
-            className="px-4 py-2 rounded-xl bg-[#184E34] hover:bg-[#0F3825] text-white text-xs font-bold flex items-center gap-2 cursor-pointer transition-all shadow-xs active:scale-[0.98]"
+            className="px-3.5 py-2 rounded-xl bg-[#184E34] hover:bg-[#0F3825] text-white text-xs font-bold flex items-center gap-2 cursor-pointer transition-all shadow-xs active:scale-[0.98]"
             title="Excel किंवा CSV फाईलवरून संस्थांचा डेटा सिस्टीममध्ये अपलोड करा"
           >
             <UploadCloud className="w-4 h-4 text-emerald-300" />
-            <span>Excel Sheet अपलोड करा (Bulk Upload)</span>
+            <span>Excel Sheet अपलोड करा</span>
           </button>
 
           <button
             onClick={exportToCSV}
-            className="px-3.5 py-2 rounded-xl border border-stone-300 hover:bg-stone-50 text-stone-700 text-xs font-semibold flex items-center gap-2 cursor-pointer transition-colors shadow-2xs"
+            className="px-3 py-2 rounded-xl border border-stone-300 hover:bg-stone-50 text-stone-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
             title="विद्यमान सर्व अर्ज CSV किंवा Excel मध्ये डाउनलोड करा"
           >
             <FileSpreadsheet className="w-4 h-4 text-[#0B6643]" />
@@ -392,6 +447,7 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap">
                       <span className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border ${
+                        app.status === 'New Application' ? 'bg-amber-100 text-amber-900 border-amber-300 font-extrabold shadow-2xs' :
                         app.status === 'Approved' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
                         app.status === 'Shortlisted' ? 'bg-purple-50 text-purple-800 border-purple-200' :
                         app.status === 'Meeting Scheduled' ? 'bg-indigo-50 text-indigo-800 border-indigo-200' :

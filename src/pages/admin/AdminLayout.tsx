@@ -96,7 +96,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onExitAdmin }) => {
   const newCount = applications.filter((a) => a.status === 'New Application').length;
 
   return (
-    <div className="min-h-screen bg-[#F4F6F4] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F1F5F9] flex flex-col font-sans">
       {/* Top Admin Header Bar */}
       <header className="bg-[#0F3825] text-white sticky top-0 z-40 border-b border-[#184E34] shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">

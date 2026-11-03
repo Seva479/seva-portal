@@ -93,7 +93,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </svg>
               </div>
 
-              {/* Original Brand Typography */}
+              {/* Original Brand Typography with Sarathi Sanstha initiative note */}
               <div className="space-y-0.5">
                 <span className="text-2xl sm:text-3xl font-black tracking-tight text-[#143E29] group-hover:text-[#184E34] transition-colors leading-none block">
                   SEVA
@@ -101,21 +101,24 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="block text-[10px] sm:text-[11px] font-bold text-[#184E34] tracking-tight uppercase leading-tight">
                   Sustainable Ecology &amp; Village Advancement
                 </span>
+                <span className="block text-[9px] sm:text-[10.5px] font-bold text-[#0B6643] tracking-normal leading-tight">
+                  An Initiative of Sarathi Sanstha
+                </span>
               </div>
             </button>
 
-            {/* Center: Desktop Navigation Links */}
-            <nav className="hidden xl:flex items-center gap-1">
+            {/* Center: Desktop Navigation Links (Bold Text for Maximum Legibility) */}
+            <nav className="hidden xl:flex items-center gap-1.5">
               {navLinks.map((link) => {
                 const isActive = currentView === link.id && !isAdmin;
                 return (
                   <button
                     key={link.id}
                     onClick={() => handleNavClick(link.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer whitespace-nowrap ${
+                    className={`px-3.5 py-1.5 rounded-lg text-xs xl:text-sm font-bold tracking-tight transition-all cursor-pointer whitespace-nowrap ${
                       isActive
-                        ? 'bg-emerald-50 text-[#143E29] font-extrabold border-b-2 border-[#184E34]'
-                        : 'text-stone-600 hover:text-[#143E29] hover:bg-stone-50'
+                        ? 'bg-emerald-50 text-[#143E29] font-black border-b-2 border-[#184E34]'
+                        : 'text-stone-800 hover:text-[#143E29] hover:bg-stone-100 font-bold'
                     }`}
                   >
                     {link.label}
@@ -160,7 +163,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Mobile & Tablet dropdown menu */}
+        {/* Mobile & Tablet dropdown menu (Bold & Accessible) */}
         {mobileMenuOpen && (
           <div className="xl:hidden bg-white border-t border-stone-200 px-4 pt-3 pb-6 space-y-2 shadow-xl animate-in slide-in-from-top-2 duration-150">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pb-2">
@@ -168,10 +171,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   key={link.id}
                   onClick={() => handleNavClick(link.id)}
-                  className={`block w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                  className={`block w-full text-left px-4 py-2.5 rounded-xl text-base font-bold transition-colors ${
                     currentView === link.id && !isAdmin
-                      ? 'bg-emerald-50 text-[#143E29] font-bold border-l-4 border-[#184E34]'
-                      : 'text-[#254636] hover:bg-stone-50'
+                      ? 'bg-emerald-50 text-[#143E29] font-black border-l-4 border-[#184E34]'
+                      : 'text-stone-800 hover:bg-stone-50 font-bold'
                   }`}
                 >
                   {link.label}

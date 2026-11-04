@@ -122,21 +122,27 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* 3. Desktop Navigation Bar (Large screens) */}
-        <div className="hidden lg:block border-t border-stone-100 bg-stone-50/70">
-          <div className="max-w-7xl mx-auto px-6 lg:px-8">
-            <nav className="flex items-center justify-between py-1.5">
-              <div className="flex items-center gap-1">
+        {/* 3. Dedicated Rich Dark Green Desktop Navigation Ribbon */}
+        <div
+          className="hidden lg:block border-t border-[#04281C] text-white shadow-md"
+          style={{
+            backgroundColor: '#064E36',
+            backgroundImage: 'linear-gradient(135deg, #03281C 0%, #064E36 50%, #0A6347 100%)',
+          }}
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <nav className="flex items-center justify-between py-2">
+              <div className="flex items-center gap-1 xl:gap-2">
                 {navLinks.map((link) => {
                   const isActive = currentView === link.id;
                   return (
                     <button
                       key={link.id}
                       onClick={() => handleNavClick(link.id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      className={`px-3.5 py-1.5 rounded-lg text-xs xl:text-sm font-bold tracking-tight transition-all cursor-pointer whitespace-nowrap ${
                         isActive
-                          ? 'bg-[#064E36] text-white shadow-2xs'
-                          : 'text-stone-700 hover:text-[#064E36] hover:bg-white'
+                          ? 'bg-white text-[#064E36] font-black shadow-xs'
+                          : 'text-emerald-100 hover:text-white hover:bg-white/15'
                       }`}
                     >
                       {link.label}
@@ -145,11 +151,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                 })}
               </div>
 
-              <div className="flex items-center gap-3 text-xs font-medium text-stone-500">
-                <span className="flex items-center gap-1 text-[#064E36] font-bold">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  <span>2026 Batch Active</span>
-                </span>
+              <div className="flex items-center gap-2 text-xs font-bold text-amber-300 bg-black/30 px-3 py-1 rounded-full border border-amber-400/30 shadow-xs">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>2026 Batch Active · Ralegaon Hub</span>
               </div>
             </nav>
           </div>

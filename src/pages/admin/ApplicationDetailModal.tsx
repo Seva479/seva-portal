@@ -202,17 +202,15 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {application.status === 'Rejected' && (
-              <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(true)}
-                className="px-3 py-1.5 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 hover:text-red-900 text-xs font-bold border border-red-300 flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
-                title="रिजेक्ट झालेला अर्ज कायमचा डिलिट करा"
-              >
-                <Trash2 className="w-3.5 h-3.5 text-red-600" />
-                <span>अर्ज डिलिट करा</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-900 text-xs font-bold border border-red-200 flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
+              title="हा अर्ज सिस्टीममधून कायमचा डिलिट करा (Delete Application)"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-red-600" />
+              <span>{application.status === 'Rejected' ? 'रिजेक्ट अर्ज डिलिट करा' : 'अर्ज डिलिट करा'}</span>
+            </button>
             <button
               onClick={() => window.print()}
               className="p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-200 rounded-lg transition-colors cursor-pointer"

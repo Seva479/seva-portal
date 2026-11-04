@@ -472,19 +472,17 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
                         >
                           Review
                         </button>
-                        {app.status === 'Rejected' && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setAppToDelete(app);
-                            }}
-                            className="p-1.5 text-red-600 hover:text-white hover:bg-red-600 rounded-md border border-red-200 hover:border-red-600 transition-colors cursor-pointer"
-                            title="रिजेक्ट झालेला अर्ज कायमचा डिलिट करा"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAppToDelete(app);
+                          }}
+                          className="p-1.5 text-stone-400 hover:text-white hover:bg-red-600 rounded-md border border-stone-200 hover:border-red-600 transition-colors cursor-pointer"
+                          title="हा अर्ज सिस्टीममधून कायमचा डिलिट करा (Delete Application)"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </td>
                   </tr>

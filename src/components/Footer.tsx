@@ -14,13 +14,24 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenAdmin }) => {
           {/* Column 1 & 2: Organization Info */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-[#E8F5E9] p-1 flex items-center justify-center shrink-0 border border-emerald-300/60 shadow-xs">
+              <div className="w-11 h-11 rounded-2xl bg-[#E8F8F0] p-1 flex items-center justify-center shrink-0 border border-[#86EFAC] shadow-xs">
                 <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-8 h-8">
-                  <path d="M24 4 C14 12 10 24 16 36 C22 48 38 44 42 28 C46 12 34 6 24 4 Z" fill="#52B788" opacity="0.85" />
-                  <circle cx="12" cy="24" r="2.5" fill="#F59E0B" />
-                  <circle cx="36" cy="24" r="2.5" fill="#F59E0B" />
-                  <circle cx="24" cy="12" r="2.5" fill="#38BDF8" />
-                  <text x="24" y="32" textAnchor="middle" fill="#FFFFFF" fontSize="22" fontWeight="900" fontFamily="sans-serif">
+                  <path
+                    d="M24 6 C17 11 11 21 15 34 C18 43 30 43 33 34 C37 21 31 11 24 6 Z"
+                    fill="#2E9E6B"
+                  />
+                  <circle cx="24" cy="11.5" r="2.2" fill="#38BDF8" />
+                  <circle cx="12" cy="25" r="2.4" fill="#F59E0B" />
+                  <circle cx="36" cy="25" r="2.4" fill="#F59E0B" />
+                  <text
+                    x="24"
+                    y="32.5"
+                    textAnchor="middle"
+                    fill="#FFFFFF"
+                    fontSize="21"
+                    fontWeight="900"
+                    fontFamily="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+                  >
                     S
                   </text>
                 </svg>

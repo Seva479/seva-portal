@@ -879,6 +879,7 @@ export const INITIAL_CONTACT_MESSAGES: ContactMessage[] = [
 // Storage Keys
 const STORAGE_KEYS = {
   APPLICATIONS: 'seva_applications_v1',
+  DELETED_APPLICATIONS: 'seva_deleted_applications_v1',
   SETTINGS: 'seva_settings_v1',
   IMPACT_STATS: 'seva_impact_stats_v1',
   CASE_STUDIES: 'seva_case_studies_v1',
@@ -968,13 +969,40 @@ export class SevaStore {
     }
   }
 
-  // Applications (Resilient multi-key loading ensures user-entered organisations are NEVER lost)
+  // Deleted Application IDs tracker (guarantees deleted applications NEVER resurrect)
+  static getDeletedApplicationIds(): Set<string> {
+    try {
+      const raw = safeStorageGet(STORAGE_KEYS.DELETED_APPLICATIONS);
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) {
+          return new Set<string>(arr.map(String));
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+    return new Set<string>();
+  }
+
+  static addDeletedApplicationId(appId: string): void {
+    if (!appId) return;
+    const current = this.getDeletedApplicationIds();
+    current.add(appId);
+    safeStorageSet(
+      STORAGE_KEYS.DELETED_APPLICATIONS,
+      JSON.stringify(Array.from(current))
+    );
+  }
+
+  // Applications (Resilient multi-key loading ensures user-entered organisations are NEVER lost, while deleted applications STAY deleted)
   static getApplications(): Application[] {
     const map = new Map<string, Application>();
+    const deletedIds = this.getDeletedApplicationIds();
 
-    // Step 1: Base fallback seed data
+    // Step 1: Base fallback seed data (exclude any deleted applications)
     for (const app of INITIAL_APPLICATIONS) {
-      if (app && app.id) {
+      if (app && app.id && !deletedIds.has(app.id)) {
         map.set(app.id, app);
       }
     }
@@ -997,7 +1025,7 @@ export class SevaStore {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) {
             for (const item of parsed) {
-              if (item && item.id) {
+              if (item && item.id && !deletedIds.has(item.id)) {
                 map.set(item.id, item);
               }
             }
@@ -1014,16 +1042,26 @@ export class SevaStore {
         for (let i = 0; i < window.localStorage.length; i++) {
           const k = window.localStorage.key(i);
           if (k && (k.includes('application') || k.includes('seva_app') || k.includes('organis'))) {
-            if (!legacyKeys.includes(k) && k !== STORAGE_KEYS.APPLICATIONS) {
+            if (
+              !legacyKeys.includes(k) &&
+              k !== STORAGE_KEYS.APPLICATIONS &&
+              k !== STORAGE_KEYS.DELETED_APPLICATIONS
+            ) {
               try {
                 const val = window.localStorage.getItem(k);
                 if (val && val.startsWith('[')) {
                   const arr = JSON.parse(val);
-                  if (Array.isArray(arr) && arr.length > 0 && (arr[0].name_of_organization || arr[0].contact_person_name)) {
+                  if (
+                    Array.isArray(arr) &&
+                    arr.length > 0 &&
+                    (arr[0].name_of_organization || arr[0].contact_person_name)
+                  ) {
                     for (const item of arr) {
                       if (item && (item.id || item.name_of_organization)) {
                         const id = item.id || `SEVA-RESTORED-${map.size + 1}`;
-                        map.set(id, { ...item, id });
+                        if (!deletedIds.has(id)) {
+                          map.set(id, { ...item, id });
+                        }
                       }
                     }
                   }
@@ -1047,7 +1085,7 @@ export class SevaStore {
         const parsed = JSON.parse(primaryRaw);
         if (Array.isArray(parsed)) {
           for (const item of parsed) {
-            if (item && item.id) {
+            if (item && item.id && !deletedIds.has(item.id)) {
               // Overwrite with primary storage key's newest data
               map.set(item.id, item);
             }
@@ -1056,6 +1094,11 @@ export class SevaStore {
       } catch (e) {
         console.warn('Error reading primary applications:', e);
       }
+    }
+
+    // Absolute Guarantee: Ensure NO deleted IDs ever exist in the returned list
+    for (const did of deletedIds) {
+      map.delete(did);
     }
 
     const merged = Array.from(map.values());
@@ -1152,13 +1195,14 @@ export class SevaStore {
       return { mergedCount: 0, newCount: 0 };
     }
     const local = this.getApplications();
+    const deletedIds = this.getDeletedApplicationIds();
     const map = new Map<string, Application>();
     for (const app of local) {
-      if (app && app.id) map.set(app.id, app);
+      if (app && app.id && !deletedIds.has(app.id)) map.set(app.id, app);
     }
     let newCount = 0;
     for (const rem of remoteApps) {
-      if (rem && rem.id) {
+      if (rem && rem.id && !deletedIds.has(rem.id)) {
         if (!map.has(rem.id)) {
           newCount++;
         }
@@ -1314,13 +1358,101 @@ export class SevaStore {
   }
 
   static deleteApplication(appId: string): boolean {
-    const list = this.getApplications();
-    const filtered = list.filter((a) => a.id !== appId);
-    if (filtered.length !== list.length) {
-      this.save(STORAGE_KEYS.APPLICATIONS, filtered);
-      return true;
+    if (!appId) return false;
+
+    // 1. Add to permanent deleted blacklist
+    this.addDeletedApplicationId(appId);
+
+    // 2. Filter from primary list and save
+    const currentList = this.getApplications();
+    const filtered = currentList.filter((a) => a.id !== appId);
+    this.save(STORAGE_KEYS.APPLICATIONS, filtered);
+    safeStorageSet('seva_applications', JSON.stringify(filtered));
+
+    // 3. Purge from ALL legacy keys in localStorage immediately
+    const legacyKeys = [
+      'seva_applications',
+      'applications',
+      'seva_apps',
+      'seva_applications_backup',
+      'seva_applications_v0',
+      'seva_org_applications',
+      'seva_applications_store',
+    ];
+    for (const lk of legacyKeys) {
+      try {
+        const raw = safeStorageGet(lk);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            const purged = parsed.filter((item: any) => item && item.id !== appId);
+            safeStorageSet(lk, JSON.stringify(purged));
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
     }
-    return false;
+
+    // 4. Scan and purge from any other application keys in localStorage
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        for (let i = 0; i < window.localStorage.length; i++) {
+          const k = window.localStorage.key(i);
+          if (
+            k &&
+            (k.includes('application') || k.includes('seva_app')) &&
+            k !== STORAGE_KEYS.DELETED_APPLICATIONS
+          ) {
+            try {
+              const val = window.localStorage.getItem(k);
+              if (val && val.startsWith('[')) {
+                const arr = JSON.parse(val);
+                if (Array.isArray(arr)) {
+                  const purged = arr.filter((x: any) => x && x.id !== appId);
+                  window.localStorage.setItem(k, JSON.stringify(purged));
+                }
+              }
+            } catch (e) {
+              // ignore
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    // 5. If Supabase is configured, delete from remote Supabase table so sync never restores it
+    try {
+      import('./supabase')
+        .then(({ getSupabaseClient, isSupabaseConfigured }) => {
+          if (isSupabaseConfigured()) {
+            const client = getSupabaseClient();
+            client.from('applications').delete().eq('id', appId).then(({ error }) => {
+              if (error) console.warn('Supabase remote delete error:', error);
+            });
+          }
+        })
+        .catch(() => {});
+    } catch (e) {
+      // ignore
+    }
+
+    // 6. Broadcast event so any open tab/layout updates instantly
+    if (typeof window !== 'undefined') {
+      try {
+        window.dispatchEvent(
+          new CustomEvent('seva_store_updated', {
+            detail: { type: 'application_deleted', id: appId },
+          })
+        );
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    return true;
   }
 
   static saveApplicationReview(appId: string, review: ApplicationReview, updatedPriority?: Application['priority']): Application | null {

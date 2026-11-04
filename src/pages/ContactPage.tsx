@@ -147,7 +147,7 @@ export const ContactPage: React.FC = () => {
 
           {/* Right Column: Contact Form */}
           <div className="lg:col-span-7">
-            <div className="bg-white rounded-2xl border border-stone-200 p-8 sm:p-10 shadow-xs">
+            <div className="bg-white rounded-2xl border border-stone-200 p-4 sm:p-8 md:p-10 shadow-xs max-w-full overflow-hidden">
               {submitted ? (
                 <div className="text-center py-12 space-y-4">
                   <div className="w-14 h-14 rounded-full bg-emerald-100 text-[#0B6643] mx-auto flex items-center justify-center">

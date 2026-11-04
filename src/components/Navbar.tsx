@@ -161,8 +161,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* 4. Streamlined Mobile Drawer (Completely uncluttered, high touch-friendly) */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-stone-200 bg-white shadow-xl animate-in slide-in-from-top-2 duration-200">
-            {/* Top Contact Strip in Drawer */}
+          <>
+            {/* Backdrop overlay to close when touching outside */}
+            <div
+              className="fixed inset-0 top-14 bg-black/40 z-30 lg:hidden backdrop-blur-xs"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <div className="lg:hidden border-t border-stone-200 bg-white shadow-xl animate-in slide-in-from-top-2 duration-200 relative z-40">
+              {/* Top Contact Strip in Drawer */}
             <div className="bg-[#064E36] p-3 text-white flex items-center justify-between text-xs font-medium">
               <a href="tel:+918999469974" className="flex items-center gap-1.5 hover:text-amber-200 font-bold">
                 <Phone className="w-3.5 h-3.5 text-amber-400" />
@@ -234,7 +240,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             </div>
           </div>
-        )}
+        </>
+      )}
       </header>
     </>
   );

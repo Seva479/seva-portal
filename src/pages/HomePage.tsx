@@ -161,7 +161,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                 <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-stretch gap-2 sm:gap-2.5">
                   {/* Pillar 1: Technology */}
                   <div
-                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-xs"
+                    className="flex items-center gap-2 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11.5px] sm:text-sm font-extrabold transition-all shadow-xs min-h-[44px]"
                     style={{
                       backgroundColor: '#EFF6FF',
                       border: '1.5px solid #93C5FD',
@@ -174,12 +174,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                     >
                       <Laptop className="w-3.5 h-3.5" />
                     </div>
-                    <span>Technology</span>
+                    <span className="truncate">Technology</span>
                   </div>
 
                   {/* Pillar 2: Capacity Building */}
                   <div
-                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-xs"
+                    className="flex items-center gap-2 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11.5px] sm:text-sm font-extrabold transition-all shadow-xs min-h-[44px]"
                     style={{
                       backgroundColor: '#ECFDF5',
                       border: '1.5px solid #6EE7B7',
@@ -192,12 +192,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                     >
                       <Users className="w-3.5 h-3.5" />
                     </div>
-                    <span>Capacity Building</span>
+                    <span className="truncate">Capacity Building</span>
                   </div>
 
                   {/* Pillar 3: MIS & Systems */}
                   <div
-                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-xs"
+                    className="flex items-center gap-2 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11.5px] sm:text-sm font-extrabold transition-all shadow-xs min-h-[44px]"
                     style={{
                       backgroundColor: '#FFFBEB',
                       border: '1.5px solid #FCD34D',
@@ -210,12 +210,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                     >
                       <Database className="w-3.5 h-3.5" />
                     </div>
-                    <span>MIS &amp; Systems</span>
+                    <span className="truncate">MIS &amp; Systems</span>
                   </div>
 
                   {/* Pillar 4: Data Management */}
                   <div
-                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-xs"
+                    className="flex items-center gap-2 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11.5px] sm:text-sm font-extrabold transition-all shadow-xs min-h-[44px]"
                     style={{
                       backgroundColor: '#EEF2FF',
                       border: '1.5px solid #A5B4FC',
@@ -228,12 +228,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                     >
                       <FileSpreadsheet className="w-3.5 h-3.5" />
                     </div>
-                    <span>Data Management</span>
+                    <span className="truncate">Data Management</span>
                   </div>
 
                   {/* Pillar 5: Social Impact (spans 2 cols on mobile) */}
                   <div
-                    className="col-span-2 sm:col-span-1 flex items-center justify-center sm:justify-start gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-xs"
+                    className="col-span-2 sm:col-span-1 flex items-center justify-center sm:justify-start gap-2 px-3.5 py-2 sm:py-2.5 rounded-xl text-[11.5px] sm:text-sm font-extrabold transition-all shadow-xs min-h-[44px]"
                     style={{
                       backgroundColor: '#F0FDF4',
                       border: '1.5px solid #86EFAC',
@@ -258,22 +258,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               >
                 Technology should not be a barrier to village development. SEVA, an initiative of Sarathi Sanstha, works with grassroots organisations to simplify their systems, build digital confidence, improve data management, and amplify their ground social impact.
               </p>
-
-              {/* Sarathi Sanstha Mission Statement Banner */}
-              <div
-                className="text-xs sm:text-sm leading-relaxed p-3.5 rounded-xl shadow-xs"
-                style={{
-                  backgroundColor: '#F0FDF4',
-                  borderLeft: '4px solid #064E36',
-                  borderTop: '1px solid #BBF7D0',
-                  borderRight: '1px solid #BBF7D0',
-                  borderBottom: '1px solid #BBF7D0',
-                  color: '#064E36',
-                  fontWeight: 600,
-                }}
-              >
-                Sarathi Sanstha works with the objective of sustaining the livelihoods of tribal women and farmers, and also works on the issues of environment, education, and self-governance.
-              </div>
 
               {/* Responsive CTAs: Full-width on mobile, auto on desktop */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
@@ -332,7 +316,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
             {/* Right Media: Attractive High-Impact Illustration */}
             <div className="lg:col-span-5">
               <PencilHeroArt
-                className="h-[380px] sm:h-[440px] lg:h-[480px]"
+                className="h-[250px] sm:h-[380px] lg:h-[480px]"
                 caption="ग्रामीण महिला डिजिटल सक्षमीकरण (Lush Village Digital Collaboration)"
               />
             </div>

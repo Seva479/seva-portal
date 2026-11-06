@@ -7,6 +7,8 @@ interface NavbarProps {
   onNavigate: (view: string) => void;
   isAdmin: boolean;
   onToggleAdmin: () => void;
+  mobileMenuOpen?: boolean;
+  onToggleMobileMenu?: (open?: boolean) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -14,8 +16,18 @@ export const Navbar: React.FC<NavbarProps> = ({
   onNavigate,
   isAdmin,
   onToggleAdmin,
+  mobileMenuOpen: externalMenuOpen,
+  onToggleMobileMenu,
 }) => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [internalMenuOpen, setInternalMenuOpen] = useState(false);
+  const mobileMenuOpen = externalMenuOpen !== undefined ? externalMenuOpen : internalMenuOpen;
+  const setMobileMenuOpen = (open: boolean) => {
+    if (onToggleMobileMenu) {
+      onToggleMobileMenu(open);
+    } else {
+      setInternalMenuOpen(open);
+    }
+  };
 
   const navLinks = [
     { id: 'home', label: 'Home' },
@@ -164,10 +176,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           <>
             {/* Backdrop overlay to close when touching outside */}
             <div
-              className="fixed inset-0 top-14 bg-black/40 z-30 lg:hidden backdrop-blur-xs"
+              className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-xs transition-opacity"
               onClick={() => setMobileMenuOpen(false)}
             />
-            <div className="lg:hidden border-t border-stone-200 bg-white shadow-xl animate-in slide-in-from-top-2 duration-200 relative z-40">
+            <div className="lg:hidden border-t border-stone-200 bg-white shadow-2xl animate-in slide-in-from-top-2 duration-200 relative z-50">
               {/* Top Contact Strip in Drawer */}
             <div className="bg-[#064E36] p-3 text-white flex items-center justify-between text-xs font-medium">
               <a href="tel:+918999469974" className="flex items-center gap-1.5 hover:text-amber-200 font-bold">

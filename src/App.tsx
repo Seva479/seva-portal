@@ -148,7 +148,7 @@ export default function App() {
       />
 
       {/* Main Body View (with bottom padding on mobile so content is never covered by bottom nav) */}
-      <main className="flex-1 pb-16 lg:pb-0">
+      <main className="flex-1 pb-16 md:pb-0">
         {currentView === 'home' && <HomePage onNavigate={handleNavigate} />}
         {currentView === 'about' && <AboutPage onNavigate={handleNavigate} />}
         {currentView === 'approach' && <ApproachPage onNavigate={handleNavigate} />}

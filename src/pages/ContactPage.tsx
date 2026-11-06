@@ -196,7 +196,7 @@ export const ContactPage: React.FC = () => {
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         placeholder="e.g. Ramesh Patil"
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0B6643]/30 focus:border-[#0B6643]"
+                        className="w-full min-h-[48px] px-3.5 py-2.5 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0B6643]/30 focus:border-[#0B6643]"
                       />
                     </div>
 
@@ -210,7 +210,7 @@ export const ContactPage: React.FC = () => {
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         placeholder="e.g. ramesh@trust.org"
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0B6643]/30 focus:border-[#0B6643]"
+                        className="w-full min-h-[48px] px-3.5 py-2.5 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0B6643]/30 focus:border-[#0B6643]"
                       />
                     </div>
                   </div>
@@ -225,7 +225,7 @@ export const ContactPage: React.FC = () => {
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                         placeholder="e.g. 9822000000"
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0B6643]/30 focus:border-[#0B6643]"
+                        className="w-full min-h-[48px] px-3.5 py-2.5 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0B6643]/30 focus:border-[#0B6643]"
                       />
                     </div>
 
@@ -238,7 +238,7 @@ export const ContactPage: React.FC = () => {
                         value={formData.organisation}
                         onChange={(e) => setFormData({ ...formData, organisation: e.target.value })}
                         placeholder="e.g. Gram Vikas Sanstha"
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0B6643]/30 focus:border-[#0B6643]"
+                        className="w-full min-h-[48px] px-3.5 py-2.5 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0B6643]/30 focus:border-[#0B6643]"
                       />
                     </div>
                   </div>
@@ -252,7 +252,7 @@ export const ContactPage: React.FC = () => {
                       value={formData.subject}
                       onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                       placeholder="e.g. Inquiry regarding MIS training in Yavatmal"
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0B6643]/30 focus:border-[#0B6643]"
+                      className="w-full min-h-[48px] px-3.5 py-2.5 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0B6643]/30 focus:border-[#0B6643]"
                     />
                   </div>
 
@@ -266,14 +266,14 @@ export const ContactPage: React.FC = () => {
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                       placeholder="Please share details about your inquiry..."
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0B6643]/30 focus:border-[#0B6643]"
+                      className="w-full min-h-[96px] px-3.5 py-2.5 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0B6643]/30 focus:border-[#0B6643]"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full py-3.5 px-6 rounded-lg bg-[#0B6643] hover:bg-[#064E36] text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="w-full min-h-[48px] py-3.5 px-6 rounded-lg bg-[#0B6643] hover:bg-[#064E36] text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {submitting ? (
                       <span>Sending...</span>

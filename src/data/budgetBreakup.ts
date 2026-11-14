@@ -102,21 +102,45 @@ export const DEFAULT_BANK_DETAILS = {
   branch: 'RALEGAON',
 };
 
-export const calculateBudget = (heads: BudgetHeadItem[], includeMaintenance: boolean = false) => {
+export const FOREIGN_ORG_SURCHARGE_PERCENT = 25;
+
+export const calculateBudget = (
+  heads: BudgetHeadItem[],
+  includeMaintenance: boolean = false,
+  includeForeignOrgSurcharge: boolean = false
+) => {
   const selected = heads.filter((h) => h.is_selected);
   const totalBase = selected.reduce((sum, h) => sum + h.total_amount, 0);
   const maintenance = includeMaintenance ? ANNUAL_MAINTENANCE_CHARGE : 0;
-  const grandTotal = totalBase + maintenance;
+  const subTotalBeforeSurcharge = totalBase + maintenance;
+  const foreignOrgSurcharge = includeForeignOrgSurcharge
+    ? Math.round(subTotalBeforeSurcharge * (FOREIGN_ORG_SURCHARGE_PERCENT / 100))
+    : 0;
+  const grandTotal = subTotalBeforeSurcharge + foreignOrgSurcharge;
 
   // 70% SEVA, 30% Partner
   const sevaSupported = Math.round(grandTotal * 0.7);
   const partnerContribution = grandTotal - sevaSupported; // Ensures exact sum
+
+  const headsSeva = selected.reduce((sum, h) => sum + h.seva_support, 0);
+  const headsPartner = selected.reduce((sum, h) => sum + h.partner_contribution, 0);
+  const maintenanceSeva = includeMaintenance ? Math.round(ANNUAL_MAINTENANCE_CHARGE * 0.7) : 0;
+  const maintenancePartner = maintenance - maintenanceSeva;
+  const foreignOrgSeva = includeForeignOrgSurcharge
+    ? sevaSupported - headsSeva - maintenanceSeva
+    : 0;
+  const foreignOrgPartner = foreignOrgSurcharge - foreignOrgSeva;
 
   return {
     selectedCount: selected.length,
     selectedHeads: selected,
     totalBase,
     maintenance,
+    maintenanceSeva,
+    maintenancePartner,
+    foreignOrgSurcharge,
+    foreignOrgSeva,
+    foreignOrgPartner,
     grandTotal,
     sevaSupported,
     partnerContribution,
@@ -146,6 +170,8 @@ export const INITIAL_AGREEMENT: TechnologySupportAgreement = {
   payment_deadline: 'Within one (1) week of signing this Agreement',
   include_maintenance_charge: false,
   annual_maintenance_charge: ANNUAL_MAINTENANCE_CHARGE,
+  include_foreign_org_surcharge: false,
+  foreign_org_surcharge_percent: FOREIGN_ORG_SURCHARGE_PERCENT,
   selected_budget_heads: DEFAULT_BUDGET_HEADS.map((h) => ({
     ...h,
     is_selected: [1, 2, 5].includes(h.id), // MIS Mobile, MIS Web, Website

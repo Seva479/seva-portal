@@ -21,6 +21,7 @@ import {
   RefreshCw,
   X,
   Share2,
+  Globe,
 } from 'lucide-react';
 import { Application, BudgetHeadItem, TechnologySupportAgreement } from '../../types';
 import { SevaStore } from '../../services/store';
@@ -29,6 +30,7 @@ import {
   DEFAULT_FIRST_PARTY_INFO,
   DEFAULT_BANK_DETAILS,
   ANNUAL_MAINTENANCE_CHARGE,
+  FOREIGN_ORG_SURCHARGE_PERCENT,
   calculateBudget,
 } from '../../data/budgetBreakup';
 
@@ -56,10 +58,11 @@ export const AgreementBudgetManager: React.FC<AgreementBudgetManagerProps> = ({
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [copiedDraft, setCopiedDraft] = useState(false);
 
-  // Recalculate totals whenever budget heads or maintenance toggle change
+  // Recalculate totals whenever budget heads, maintenance toggle, or foreign org +25% toggle change
   const budgetSummary = calculateBudget(
     currentAgreement.selected_budget_heads,
-    currentAgreement.include_maintenance_charge
+    currentAgreement.include_maintenance_charge,
+    Boolean(currentAgreement.include_foreign_org_surcharge)
   );
 
   // Select an existing agreement from history
@@ -97,7 +100,11 @@ export const AgreementBudgetManager: React.FC<AgreementBudgetManagerProps> = ({
       };
     });
 
-    const newTotals = calculateBudget(updatedHeads, currentAgreement.include_maintenance_charge);
+    const newTotals = calculateBudget(
+      updatedHeads,
+      currentAgreement.include_maintenance_charge,
+      Boolean(currentAgreement.include_foreign_org_surcharge)
+    );
 
     const updatedAgr: TechnologySupportAgreement = {
       ...currentAgreement,
@@ -128,7 +135,11 @@ export const AgreementBudgetManager: React.FC<AgreementBudgetManagerProps> = ({
       h.id === headId ? { ...h, is_selected: !h.is_selected } : h
     );
 
-    const totals = calculateBudget(updatedHeads, currentAgreement.include_maintenance_charge);
+    const totals = calculateBudget(
+      updatedHeads,
+      currentAgreement.include_maintenance_charge,
+      Boolean(currentAgreement.include_foreign_org_surcharge)
+    );
 
     const updatedAgr: TechnologySupportAgreement = {
       ...currentAgreement,
@@ -146,7 +157,11 @@ export const AgreementBudgetManager: React.FC<AgreementBudgetManagerProps> = ({
   // Toggle maintenance charge
   const handleToggleMaintenance = () => {
     const nextVal = !currentAgreement.include_maintenance_charge;
-    const totals = calculateBudget(currentAgreement.selected_budget_heads, nextVal);
+    const totals = calculateBudget(
+      currentAgreement.selected_budget_heads,
+      nextVal,
+      Boolean(currentAgreement.include_foreign_org_surcharge)
+    );
 
     const updatedAgr: TechnologySupportAgreement = {
       ...currentAgreement,
@@ -161,13 +176,46 @@ export const AgreementBudgetManager: React.FC<AgreementBudgetManagerProps> = ({
     setAgreements(SevaStore.getAgreements());
   };
 
+  // Toggle Foreign Organisation +25% Additional Budget Option
+  const handleToggleForeignOrgSurcharge = () => {
+    const nextVal = !currentAgreement.include_foreign_org_surcharge;
+    const totals = calculateBudget(
+      currentAgreement.selected_budget_heads,
+      currentAgreement.include_maintenance_charge,
+      nextVal
+    );
+
+    const updatedAgr: TechnologySupportAgreement = {
+      ...currentAgreement,
+      include_foreign_org_surcharge: nextVal,
+      foreign_org_surcharge_percent: FOREIGN_ORG_SURCHARGE_PERCENT,
+      total_annual_cost: totals.grandTotal,
+      seva_supported_cost: totals.sevaSupported,
+      partner_contribution_cost: totals.partnerContribution,
+      updated_at: new Date().toISOString(),
+    };
+
+    setCurrentAgreement(updatedAgr);
+    SevaStore.saveAgreement(updatedAgr);
+    setAgreements(SevaStore.getAgreements());
+    showNotice(
+      nextVal
+        ? 'विदेशी संस्था पर्याय लागू: बजेटमध्ये +२५% अधिक रक्कम समाविष्ट केली आहे!'
+        : 'विदेशी संस्था (+२५% अधिक रक्कम) पर्याय बंद केला आहे.'
+    );
+  };
+
   // Select All or Core 3
   const handleSelectCoreServices = () => {
     const updatedHeads = currentAgreement.selected_budget_heads.map((h) => ({
       ...h,
       is_selected: [1, 2, 5].includes(h.id), // MIS Mobile, MIS Web, Website
     }));
-    const totals = calculateBudget(updatedHeads, currentAgreement.include_maintenance_charge);
+    const totals = calculateBudget(
+      updatedHeads,
+      currentAgreement.include_maintenance_charge,
+      Boolean(currentAgreement.include_foreign_org_surcharge)
+    );
     const updatedAgr = {
       ...currentAgreement,
       selected_budget_heads: updatedHeads,
@@ -185,7 +233,11 @@ export const AgreementBudgetManager: React.FC<AgreementBudgetManagerProps> = ({
       ...h,
       is_selected: true,
     }));
-    const totals = calculateBudget(updatedHeads, currentAgreement.include_maintenance_charge);
+    const totals = calculateBudget(
+      updatedHeads,
+      currentAgreement.include_maintenance_charge,
+      Boolean(currentAgreement.include_foreign_org_surcharge)
+    );
     const updatedAgr = {
       ...currentAgreement,
       selected_budget_heads: updatedHeads,
@@ -222,6 +274,8 @@ export const AgreementBudgetManager: React.FC<AgreementBudgetManagerProps> = ({
       payment_deadline: 'Within one (1) week of signing this Agreement',
       include_maintenance_charge: false,
       annual_maintenance_charge: ANNUAL_MAINTENANCE_CHARGE,
+      include_foreign_org_surcharge: false,
+      foreign_org_surcharge_percent: FOREIGN_ORG_SURCHARGE_PERCENT,
       selected_budget_heads: DEFAULT_BUDGET_HEADS.map((h) => ({
         ...h,
         is_selected: [1, 2, 5].includes(h.id),
@@ -261,7 +315,11 @@ export const AgreementBudgetManager: React.FC<AgreementBudgetManagerProps> = ({
   // Generate and download Microsoft Word document (.doc)
   const handleDownloadWordDoc = () => {
     const selectedHeads = currentAgreement.selected_budget_heads.filter((h) => h.is_selected);
-    const totals = calculateBudget(currentAgreement.selected_budget_heads, currentAgreement.include_maintenance_charge);
+    const totals = calculateBudget(
+      currentAgreement.selected_budget_heads,
+      currentAgreement.include_maintenance_charge,
+      Boolean(currentAgreement.include_foreign_org_surcharge)
+    );
 
     const docContent = `
       <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
@@ -500,8 +558,22 @@ export const AgreementBudgetManager: React.FC<AgreementBudgetManagerProps> = ({
                 <td><strong>Annual Maintenance Charge (AMC)</strong></td>
                 <td>Server hosting, SSL renewal, security patches, regular quarterly health check</td>
                 <td>₹${ANNUAL_MAINTENANCE_CHARGE.toLocaleString('en-IN')}</td>
-                <td>₹${Math.round(ANNUAL_MAINTENANCE_CHARGE * 0.7).toLocaleString('en-IN')}</td>
-                <td>₹${Math.round(ANNUAL_MAINTENANCE_CHARGE * 0.3).toLocaleString('en-IN')}</td>
+                <td>₹${totals.maintenanceSeva.toLocaleString('en-IN')}</td>
+                <td>₹${totals.maintenancePartner.toLocaleString('en-IN')}</td>
+              </tr>
+            `
+                : ''
+            }
+            ${
+              currentAgreement.include_foreign_org_surcharge
+                ? `
+              <tr style="background-color:#eff6ff;">
+                <td style="text-align:center;">+</td>
+                <td><strong>Foreign Organisation Budget Provision (+${FOREIGN_ORG_SURCHARGE_PERCENT}%)</strong></td>
+                <td>Additional ${FOREIGN_ORG_SURCHARGE_PERCENT}% provision for foreign organisation coordination, multi-timezone support, and international compliance</td>
+                <td>₹${totals.foreignOrgSurcharge.toLocaleString('en-IN')}</td>
+                <td>₹${totals.foreignOrgSeva.toLocaleString('en-IN')}</td>
+                <td>₹${totals.foreignOrgPartner.toLocaleString('en-IN')}</td>
               </tr>
             `
                 : ''
@@ -518,7 +590,7 @@ export const AgreementBudgetManager: React.FC<AgreementBudgetManagerProps> = ({
         <p class="note">• Partner Contribution (30%): ₹${totals.partnerContribution.toLocaleString('en-IN')}<br/>
         • SEVA Support (70%): ₹${totals.sevaSupported.toLocaleString('en-IN')}<br/>
         • Grand Total: ₹${totals.grandTotal.toLocaleString('en-IN')}<br/>
-        ${currentAgreement.include_maintenance_charge ? '• Includes Per year maintenance Charge Extra ₹8700 for per year.' : '• Optional per year maintenance Charge Extra ₹8700 for per year (if opted).'}</p>
+        ${currentAgreement.include_foreign_org_surcharge ? `• Includes +${FOREIGN_ORG_SURCHARGE_PERCENT}% Foreign Organisation Budget Provision (₹${totals.foreignOrgSurcharge.toLocaleString('en-IN')}).<br/>` : ''}${currentAgreement.include_maintenance_charge ? '• Includes Per year maintenance Charge Extra ₹8700 for per year.' : '• Optional per year maintenance Charge Extra ₹8700 for per year (if opted).'}</p>
 
         <h4>FINANCIAL SUMMARY</h4>
         <table>
@@ -578,7 +650,11 @@ export const AgreementBudgetManager: React.FC<AgreementBudgetManagerProps> = ({
   // Prepare full email text to send to partner with CC to seva.ecology@gmail.com
   const getPreparedEmailBody = (): string => {
     const selected = currentAgreement.selected_budget_heads.filter((h) => h.is_selected);
-    const totals = calculateBudget(currentAgreement.selected_budget_heads, currentAgreement.include_maintenance_charge);
+    const totals = calculateBudget(
+      currentAgreement.selected_budget_heads,
+      currentAgreement.include_maintenance_charge,
+      Boolean(currentAgreement.include_foreign_org_surcharge)
+    );
 
     return `Dear ${currentAgreement.second_party_representative},
 
@@ -591,7 +667,7 @@ Under SEVA's Grassroots Technology Support Programme, the approved technology he
 ---
 PROGRAMME SUMMARY & BUDGET BREAKUP:
 ${selected.map((h, i) => `${i + 1}. ${h.head_name}: ₹${h.total_amount.toLocaleString('en-IN')} (SEVA 70%: ₹${h.seva_support.toLocaleString('en-IN')} | Partner 30%: ₹${h.partner_contribution.toLocaleString('en-IN')})`).join('\n')}
-${currentAgreement.include_maintenance_charge ? `+ Annual Maintenance Charge: ₹${ANNUAL_MAINTENANCE_CHARGE.toLocaleString('en-IN')}\n` : ''}
+${currentAgreement.include_maintenance_charge ? `+ Annual Maintenance Charge: ₹${ANNUAL_MAINTENANCE_CHARGE.toLocaleString('en-IN')}\n` : ''}${currentAgreement.include_foreign_org_surcharge ? `+ Foreign Organisation Provision (+${FOREIGN_ORG_SURCHARGE_PERCENT}%): ₹${totals.foreignOrgSurcharge.toLocaleString('en-IN')} (SEVA 70%: ₹${totals.foreignOrgSeva.toLocaleString('en-IN')} | Partner 30%: ₹${totals.foreignOrgPartner.toLocaleString('en-IN')})\n` : ''}
 TOTAL PROGRAMME VALUE: ₹${totals.grandTotal.toLocaleString('en-IN')}
 SEVA DIRECT SUPPORT (70%): ₹${totals.sevaSupported.toLocaleString('en-IN')}
 PARTICIPATING ORGANISATION CONTRIBUTION (30%): ₹${totals.partnerContribution.toLocaleString('en-IN')}
@@ -965,16 +1041,49 @@ Website: https://sevavillage.org`;
                   className="mt-0.5 w-4 h-4 text-[#184E34] rounded border-stone-300 focus:ring-emerald-500 cursor-pointer"
                 />
                 <div className="flex-1">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-bold text-stone-900">
                       Per year maintenance Charge Extra ₹8,700 for per year
                     </span>
-                    <span className="font-mono text-xs font-bold text-emerald-800">
+                    <span className="font-mono text-xs font-bold text-emerald-800 shrink-0">
                       + ₹8,700/yr
                     </span>
                   </div>
                   <p className="text-[11px] text-stone-500 mt-0.5">
                     वार्षिक सर्व्हर मेंटेनन्स, सिक्युरिटी पॅचेस व नियमित सपोर्ट शुल्क
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Foreign Organisation +25% Budget Option */}
+            <div
+              onClick={handleToggleForeignOrgSurcharge}
+              className={`p-3.5 rounded-xl border transition-all cursor-pointer select-none ${
+                currentAgreement.include_foreign_org_surcharge
+                  ? 'border-blue-500 bg-blue-50/70 shadow-2xs'
+                  : 'border-stone-200 bg-stone-50 hover:bg-blue-50/40'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={Boolean(currentAgreement.include_foreign_org_surcharge)}
+                  onChange={() => {}}
+                  className="mt-0.5 w-4 h-4 text-blue-700 rounded border-stone-300 focus:ring-blue-500 cursor-pointer"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
+                      <Globe className="w-3.5 h-3.5 text-blue-700 shrink-0" />
+                      <span>विदेशी संस्था करारनामा (+२५% अधिक रक्कम)</span>
+                    </span>
+                    <span className="font-mono text-xs font-extrabold text-blue-800 shrink-0">
+                      + ₹{Math.round((budgetSummary.totalBase + budgetSummary.maintenance) * (FOREIGN_ORG_SURCHARGE_PERCENT / 100)).toLocaleString('en-IN')} (+25%)
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-600 mt-0.5">
+                    Foreign Organisation Budget Option: एकूण बजेटमध्ये २५% अतिरिक्त रक्कम आपोआप जोडली जाईल (SEVA ७०% व पार्टनर ३०% प्रमाणानुसार).
                   </p>
                 </div>
               </div>
@@ -992,6 +1101,12 @@ Website: https://sevavillage.org`;
                 <span>निवडलेल्या सेवा संख्या:</span>
                 <span className="font-bold font-mono">{budgetSummary.selectedCount} / 9 सेवा</span>
               </div>
+              {currentAgreement.include_foreign_org_surcharge && (
+                <div className="flex items-center justify-between text-xs text-sky-200 border-b border-emerald-700/40 pb-1.5">
+                  <span>विदेशी संस्था अतिरिक्त (+२५%):</span>
+                  <span className="font-bold font-mono">+ ₹{budgetSummary.foreignOrgSurcharge.toLocaleString('en-IN')}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between text-xs">
                 <span className="text-emerald-100">एकूण वार्षिक कार्यक्रम बजेट (Total):</span>
                 <span className="font-bold font-mono text-sm">₹{budgetSummary.grandTotal.toLocaleString('en-IN')}</span>
@@ -1346,10 +1461,31 @@ Website: https://sevavillage.org`;
                           ₹{ANNUAL_MAINTENANCE_CHARGE.toLocaleString('en-IN')}
                         </td>
                         <td className="p-2 border border-stone-300 text-right font-mono text-emerald-800">
-                          ₹{Math.round(ANNUAL_MAINTENANCE_CHARGE * 0.7).toLocaleString('en-IN')}
+                          ₹{budgetSummary.maintenanceSeva.toLocaleString('en-IN')}
                         </td>
                         <td className="p-2 border border-stone-300 text-right font-mono text-amber-900">
-                          ₹{Math.round(ANNUAL_MAINTENANCE_CHARGE * 0.3).toLocaleString('en-IN')}
+                          ₹{budgetSummary.maintenancePartner.toLocaleString('en-IN')}
+                        </td>
+                      </tr>
+                    )}
+
+                    {currentAgreement.include_foreign_org_surcharge && (
+                      <tr className="bg-blue-50/70 font-semibold">
+                        <td className="p-2 border border-stone-300 text-center font-mono">+</td>
+                        <td className="p-2 border border-stone-300 text-blue-900">
+                          Foreign Organisation Provision (+{FOREIGN_ORG_SURCHARGE_PERCENT}%)
+                        </td>
+                        <td className="p-2 border border-stone-300 text-blue-950">
+                          Additional {FOREIGN_ORG_SURCHARGE_PERCENT}% provision for foreign organisation coordination, multi-timezone support, and international compliance
+                        </td>
+                        <td className="p-2 border border-stone-300 text-right font-mono text-blue-900 font-bold">
+                          ₹{budgetSummary.foreignOrgSurcharge.toLocaleString('en-IN')}
+                        </td>
+                        <td className="p-2 border border-stone-300 text-right font-mono text-emerald-800">
+                          ₹{budgetSummary.foreignOrgSeva.toLocaleString('en-IN')}
+                        </td>
+                        <td className="p-2 border border-stone-300 text-right font-mono text-amber-900">
+                          ₹{budgetSummary.foreignOrgPartner.toLocaleString('en-IN')}
                         </td>
                       </tr>
                     )}
@@ -1373,11 +1509,16 @@ Website: https://sevavillage.org`;
                 </table>
               </div>
 
-              {/* Maintenance Note from PDF */}
+              {/* Maintenance & Foreign Org Notes */}
               <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs space-y-1 text-stone-700">
                 <p>• <strong>Partner Contribution (30%):</strong> ₹{budgetSummary.partnerContribution.toLocaleString('en-IN')}</p>
                 <p>• <strong>SEVA (70%):</strong> ₹{budgetSummary.sevaSupported.toLocaleString('en-IN')}</p>
                 <p>• <strong>Grand Total:</strong> ₹{budgetSummary.grandTotal.toLocaleString('en-IN')}</p>
+                {currentAgreement.include_foreign_org_surcharge && (
+                  <p className="font-semibold text-blue-900">
+                    • Includes +{FOREIGN_ORG_SURCHARGE_PERCENT}% Foreign Organisation Budget Provision (₹{budgetSummary.foreignOrgSurcharge.toLocaleString('en-IN')}).
+                  </p>
+                )}
                 <p className="font-semibold text-stone-900">
                   {currentAgreement.include_maintenance_charge
                     ? '• Per year maintenance Charge Extra ₹8700 for per year (Included above).'

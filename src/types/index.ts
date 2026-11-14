@@ -339,7 +339,7 @@ export interface TechnologySupportAgreement {
   include_maintenance_charge: boolean;
   annual_maintenance_charge: number; // ₹8,700
   include_foreign_org_surcharge?: boolean;
-  foreign_org_surcharge_percent?: number; // 25%
+  foreign_org_surcharge_percent?: number; // up to 35%
   selected_budget_heads: BudgetHeadItem[];
   total_annual_cost: number;
   seva_supported_cost: number;

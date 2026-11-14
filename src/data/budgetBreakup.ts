@@ -102,7 +102,7 @@ export const DEFAULT_BANK_DETAILS = {
   branch: 'RALEGAON',
 };
 
-export const MAX_FOREIGN_ORG_SURCHARGE_PERCENT = 35;
+export const MAX_FOREIGN_ORG_SURCHARGE_PERCENT = 100;
 export const DEFAULT_FOREIGN_ORG_SURCHARGE_PERCENT = 35;
 
 export const getAdjustedBudgetHeads = (

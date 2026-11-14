@@ -1112,7 +1112,7 @@ Website: https://sevavillage.org`;
               </div>
             </div>
 
-            {/* Foreign Organisation Per-Head Budget Option (Up to 35%) */}
+            {/* Foreign Organisation Per-Head Budget Option (Up to 100%) */}
             <div
               onClick={handleToggleForeignOrgSurcharge}
               className={`p-3.5 rounded-xl border transition-all cursor-pointer select-none space-y-2.5 ${
@@ -1133,7 +1133,7 @@ Website: https://sevavillage.org`;
                     <span className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
                       <Globe className="w-3.5 h-3.5 text-blue-700 shrink-0" />
                       <span>
-                        विदेशी संस्था करारनामा (सेवा निहाय +{currentAgreement.include_foreign_org_surcharge ? budgetSummary.appliedForeignPercent : DEFAULT_FOREIGN_ORG_SURCHARGE_PERCENT}% — ३५% पर्यंत)
+                        विदेशी संस्था करारनामा (सेवा निहाय +{currentAgreement.include_foreign_org_surcharge ? budgetSummary.appliedForeignPercent : DEFAULT_FOREIGN_ORG_SURCHARGE_PERCENT}% — १००% पर्यंत)
                       </span>
                     </span>
                     <span className="font-mono text-xs font-extrabold text-blue-800 shrink-0">
@@ -1146,7 +1146,7 @@ Website: https://sevavillage.org`;
                     </span>
                   </div>
                   <p className="text-[11px] text-stone-600 mt-0.5">
-                    प्रत्येक निवडलेल्या बजेट हेड व सेवेमध्ये कमाल ३५% पर्यंत अतिरिक्त रक्कम सेवा निहाय जोडली जाईल (SEVA ७०% व पार्टनर ३०% प्रमाणानुसार).
+                    प्रत्येक निवडलेल्या बजेट हेड व सेवेमध्ये कमाल १००% पर्यंत अतिरिक्त रक्कम सेवा निहाय जोडली जाईल (SEVA ७०% व पार्टनर ३०% प्रमाणानुसार).
                   </p>
                 </div>
               </div>
@@ -1158,7 +1158,7 @@ Website: https://sevavillage.org`;
                 >
                   <div className="flex items-center justify-between gap-3">
                     <label className="text-[11px] font-bold text-blue-950">
-                      सेवा निहाय टक्केवारी निवडा (0% ते 35%):
+                      सेवा निहाय टक्केवारी निवडा (0% ते 100%):
                     </label>
                     <div className="flex items-center gap-1">
                       <input
@@ -1166,8 +1166,9 @@ Website: https://sevavillage.org`;
                         min={0}
                         max={MAX_FOREIGN_ORG_SURCHARGE_PERCENT}
                         value={activeForeignPercent}
+                        onFocus={(e) => e.target.select()}
                         onChange={(e) => handleChangeForeignOrgPercent(Number(e.target.value))}
-                        className="w-14 px-2 py-1 rounded-lg border border-blue-300 bg-white text-center font-mono text-xs font-bold text-blue-900"
+                        className="w-16 px-2 py-1 rounded-lg border border-blue-300 bg-white text-center font-mono text-xs font-bold text-blue-900"
                       />
                       <span className="text-xs font-bold text-blue-900">%</span>
                     </div>
@@ -1184,7 +1185,7 @@ Website: https://sevavillage.org`;
                   />
 
                   <div className="flex flex-wrap items-center gap-1.5">
-                    {[10, 15, 20, 30, 35].map((pct) => (
+                    {[15, 35, 50, 75, 100].map((pct) => (
                       <button
                         key={pct}
                         type="button"

@@ -1,0 +1,363 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Global Hardened Primitives ---
+    function isValidId(id) {
+      return id is string && id.size() >= 3 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedAdminEmail() {
+      return isSignedIn() &&
+        request.auth.token.email_verified == true &&
+        request.auth.token.email in [
+          'seva.ecology@gmail.com',
+          'programmes@sevavillage.org',
+          'admin@sevavillage.org'
+        ];
+    }
+
+    function isAdmin() {
+      return isVerifiedAdminEmail() || (
+        isSignedIn() &&
+        request.auth.token.email_verified == true &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isValidOptionalString(data, key, maxLen) {
+      return !(key in data) || (data[key] is string && data[key].size() <= maxLen);
+    }
+
+    function isValidStringList(val, maxItems) {
+      return val is list &&
+        val.size() <= maxItems &&
+        (val.size() == 0 || (val[0] is string && val[0].size() <= 200));
+    }
+
+    function isValidMapList(val, maxItems) {
+      return val is list &&
+        val.size() <= maxItems &&
+        (val.size() == 0 || val[0] is map);
+    }
+
+    function isValidStatus(status) {
+      return status is string && status.size() <= 60 && status in [
+        'New Application',
+        'Under Initial Review',
+        'Additional Information Required',
+        'Shortlisted',
+        'Meeting Scheduled',
+        'Approved',
+        'Rejected',
+        'On Hold',
+        'Agreement Pending',
+        'Implementation Started',
+        'Implementation Completed'
+      ];
+    }
+
+    function isValidPriority(priority) {
+      return priority is string && priority.size() <= 20 && priority in ['High', 'Medium', 'Low'];
+    }
+
+    // --- Validation Blueprints ---
+    function isValidApplication(data, applicationId) {
+      return data.keys().hasAll([
+          'id',
+          'status',
+          'priority',
+          'created_at',
+          'updated_at',
+          'server_created_at',
+          'server_updated_at',
+          'name_of_organization',
+          'type_of_organization',
+          'year_of_establishment',
+          'registration_number',
+          'state',
+          'district',
+          'organisation_address',
+          'organisation_email',
+          'contact_person_name',
+          'designation',
+          'contact_number',
+          'brief_description',
+          'key_areas_of_work',
+          'villages_covered',
+          'geographical_area_of_operation',
+          'annual_beneficiaries_reached',
+          'primary_beneficiaries',
+          'has_website',
+          'has_mis_system',
+          'current_digital_tools',
+          'major_technology_challenges',
+          'support_type_seeking',
+          'description_of_solution_needed',
+          'main_problem_to_solve',
+          'intended_users',
+          'estimated_users_count',
+          'has_previous_digital_project',
+          'requirement_urgency',
+          'preferred_timeline',
+          'first_priority_support'
+        ]) &&
+        data.keys().hasOnly([
+          'id',
+          'status',
+          'priority',
+          'created_at',
+          'updated_at',
+          'server_created_at',
+          'server_updated_at',
+          'name_of_organization',
+          'type_of_organization',
+          'year_of_establishment',
+          'registration_number',
+          'state',
+          'district',
+          'organisation_address',
+          'organisation_website',
+          'organisation_email',
+          'contact_person_name',
+          'designation',
+          'contact_number',
+          'brief_description',
+          'key_areas_of_work',
+          'villages_covered',
+          'geographical_area_of_operation',
+          'annual_beneficiaries_reached',
+          'primary_beneficiaries',
+          'has_website',
+          'has_mis_system',
+          'current_digital_tools',
+          'major_technology_challenges',
+          'support_type_seeking',
+          'description_of_solution_needed',
+          'main_problem_to_solve',
+          'intended_users',
+          'estimated_users_count',
+          'has_previous_digital_project',
+          'previous_digital_project_details',
+          'requirement_urgency',
+          'preferred_timeline',
+          'first_priority_support',
+          'documents',
+          'status_history',
+          'reviews',
+          'assigned_reviewer_id',
+          'assigned_reviewer_name'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == applicationId &&
+        isValidStatus(data.status) &&
+        isValidPriority(data.priority) &&
+        isValidString(data.created_at, 10, 64) &&
+        isValidString(data.updated_at, 10, 64) &&
+        data.server_created_at is timestamp &&
+        data.server_updated_at is timestamp &&
+        isValidString(data.name_of_organization, 2, 250) &&
+        isValidString(data.type_of_organization, 2, 120) &&
+        data.year_of_establishment is number &&
+        data.year_of_establishment >= 1800 &&
+        data.year_of_establishment <= 2030 &&
+        isValidString(data.registration_number, 1, 120) &&
+        isValidString(data.state, 2, 100) &&
+        isValidString(data.district, 2, 100) &&
+        isValidString(data.organisation_address, 2, 600) &&
+        isValidOptionalString(data, 'organisation_website', 300) &&
+        isValidString(data.organisation_email, 3, 200) &&
+        isValidString(data.contact_person_name, 2, 150) &&
+        isValidString(data.designation, 1, 150) &&
+        isValidString(data.contact_number, 7, 25) &&
+        isValidString(data.brief_description, 1, 4000) &&
+        isValidStringList(data.key_areas_of_work, 20) &&
+        data.villages_covered is number &&
+        data.villages_covered >= 0 &&
+        data.villages_covered <= 1000000 &&
+        isValidString(data.geographical_area_of_operation, 1, 500) &&
+        data.annual_beneficiaries_reached is number &&
+        data.annual_beneficiaries_reached >= 0 &&
+        data.annual_beneficiaries_reached <= 100000000 &&
+        isValidString(data.primary_beneficiaries, 1, 500) &&
+        data.has_website is bool &&
+        data.has_mis_system is bool &&
+        isValidStringList(data.current_digital_tools, 20) &&
+        isValidString(data.major_technology_challenges, 1, 4000) &&
+        isValidStringList(data.support_type_seeking, 20) &&
+        isValidString(data.description_of_solution_needed, 1, 4000) &&
+        isValidString(data.main_problem_to_solve, 1, 2500) &&
+        isValidString(data.intended_users, 1, 500) &&
+        data.estimated_users_count is number &&
+        data.estimated_users_count >= 0 &&
+        data.estimated_users_count <= 1000000 &&
+        data.has_previous_digital_project is bool &&
+        isValidOptionalString(data, 'previous_digital_project_details', 3000) &&
+        isValidString(data.requirement_urgency, 2, 100) &&
+        isValidString(data.preferred_timeline, 1, 200) &&
+        isValidString(data.first_priority_support, 1, 500) &&
+        (!('documents' in data) || isValidMapList(data.documents, 10)) &&
+        (!('status_history' in data) || isValidMapList(data.status_history, 50)) &&
+        (!('reviews' in data) || data.reviews is map) &&
+        isValidOptionalString(data, 'assigned_reviewer_id', 128) &&
+        isValidOptionalString(data, 'assigned_reviewer_name', 150);
+    }
+
+    function isValidContactMessage(data, messageId) {
+      return data.keys().hasAll([
+          'id',
+          'name',
+          'email',
+          'message',
+          'submitted_at',
+          'server_created_at',
+          'status'
+        ]) &&
+        data.keys().hasOnly([
+          'id',
+          'name',
+          'email',
+          'phone',
+          'organisation',
+          'subject',
+          'message',
+          'submitted_at',
+          'server_created_at',
+          'status'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == messageId &&
+        isValidString(data.name, 1, 150) &&
+        isValidString(data.email, 3, 200) &&
+        isValidOptionalString(data, 'phone', 30) &&
+        isValidOptionalString(data, 'organisation', 200) &&
+        isValidOptionalString(data, 'subject', 250) &&
+        isValidString(data.message, 1, 4000) &&
+        isValidString(data.submitted_at, 10, 64) &&
+        data.server_created_at is timestamp &&
+        data.status is string && data.status.size() <= 30 &&
+        data.status in ['Unread', 'Read', 'Replied'];
+    }
+
+    function isValidAdminUser(data) {
+      return data.keys().hasAll(['email', 'role', 'created_at']) &&
+        data.keys().hasOnly(['email', 'role', 'created_at']) &&
+        isValidString(data.email, 3, 200) &&
+        data.role is string && data.role.size() <= 40 &&
+        data.role in ['super_admin', 'programme_admin', 'reviewer'] &&
+        data.created_at is timestamp;
+    }
+
+    // --- Collection: /applications/{applicationId} ---
+    match /applications/{applicationId} {
+      // Public intake: unauthenticated NGOs can submit new applications ONLY with strict schema validation
+      allow create: if isValidId(applicationId) &&
+        isValidApplication(incoming(), applicationId) &&
+        incoming().server_created_at == request.time &&
+        incoming().server_updated_at == request.time &&
+        (
+          (
+            incoming().status == 'New Application' &&
+            incoming().priority == 'Medium' &&
+            !('reviews' in incoming())
+          ) ||
+          isAdmin()
+        );
+
+      // PII Isolation: Only verified SEVA admins can read applications
+      allow get: if isValidId(applicationId) && isAdmin();
+      allow list: if isVerifiedAdminEmail();
+
+      // Action-Based Update: Only verified SEVA admins can update status, priority, reviews, or reviewer assignment
+      allow update: if isSignedIn() &&
+        isValidId(applicationId) &&
+        isValidApplication(incoming(), applicationId) &&
+        isAdmin() &&
+        incoming().id == existing().id &&
+        incoming().server_created_at == existing().server_created_at &&
+        incoming().server_updated_at == request.time &&
+        (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'status',
+            'status_history',
+            'updated_at',
+            'server_updated_at'
+          ]) ||
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'reviews',
+            'priority',
+            'updated_at',
+            'server_updated_at'
+          ]) ||
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'assigned_reviewer_id',
+            'assigned_reviewer_name',
+            'updated_at',
+            'server_updated_at'
+          ])
+        );
+
+      allow delete: if isValidId(applicationId) && isAdmin();
+    }
+
+    // --- Collection: /contact_messages/{messageId} ---
+    match /contact_messages/{messageId} {
+      allow create: if isValidId(messageId) &&
+        isValidContactMessage(incoming(), messageId) &&
+        incoming().status == 'Unread' &&
+        incoming().server_created_at == request.time;
+
+      allow get: if isValidId(messageId) && isAdmin();
+      allow list: if isVerifiedAdminEmail();
+
+      allow update: if isSignedIn() &&
+        isValidId(messageId) &&
+        isValidContactMessage(incoming(), messageId) &&
+        isAdmin() &&
+        incoming().id == existing().id &&
+        incoming().server_created_at == existing().server_created_at &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status']);
+
+      allow delete: if isValidId(messageId) && isAdmin();
+    }
+
+    // --- Collection: /admins/{uid} ---
+    match /admins/{uid} {
+      allow get: if isSignedIn() && isValidId(uid) && (request.auth.uid == uid || isAdmin());
+      allow list: if isVerifiedAdminEmail();
+      allow create: if isSignedIn() &&
+        isValidId(uid) &&
+        isValidAdminUser(incoming()) &&
+        isAdmin() &&
+        incoming().created_at == request.time;
+      allow update: if isSignedIn() &&
+        isValidId(uid) &&
+        isValidAdminUser(incoming()) &&
+        isAdmin() &&
+        incoming().created_at == existing().created_at &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['role', 'email']);
+      allow delete: if isValidId(uid) && isAdmin();
+    }
+  }
+}

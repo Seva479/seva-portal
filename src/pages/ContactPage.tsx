@@ -13,6 +13,7 @@ import {
 import { SevaStore } from '../services/store';
 
 import { insertContactMessageToSupabase } from '../services/supabase';
+import { saveContactMessageToFirestore } from '../services/firebase';
 
 export const ContactPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -40,7 +41,14 @@ export const ContactPage: React.FC = () => {
     setSubmitting(true);
     const msg = SevaStore.submitContactMessage(formData);
 
-    // Also send to Supabase contact_messages table
+    // Save to central Firebase Firestore cloud database
+    try {
+      await saveContactMessageToFirestore(msg);
+    } catch (err) {
+      console.warn('Firestore contact message sync:', err);
+    }
+
+    // Optional secondary mirror to Supabase if configured
     try {
       await insertContactMessageToSupabase(msg);
     } catch (err) {

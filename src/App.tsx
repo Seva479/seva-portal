@@ -14,9 +14,60 @@ import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { SevaStore } from './services/store';
+import { auth, isAuthorizedAdminUser, signOutAdmin } from './services/firebase';
 import { Bell, Sparkles, X } from 'lucide-react';
 
-const CURRENT_RELEASE_TAG = '2026.11.06-v3';
+const CURRENT_RELEASE_TAG = '2026.11.18-v4';
+
+class AdminErrorBoundary extends React.Component<
+  { children: React.ReactNode; onReset: () => void },
+  { hasError: boolean; errorMessage: string }
+> {
+  constructor(props: { children: React.ReactNode; onReset: () => void }) {
+    super(props);
+    this.state = { hasError: false, errorMessage: '' };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, errorMessage: error?.message || 'अज्ञात त्रुटी' };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error('AdminErrorBoundary caught error:', error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center p-6">
+          <div className="bg-white rounded-3xl border border-stone-200 max-w-md w-full p-6 shadow-xl space-y-4 text-center">
+            <h2 className="text-lg font-extrabold text-stone-900">
+              प्रशासकीय कक्ष लोड करताना त्रुटी आली
+            </h2>
+            <p className="text-xs text-stone-600 leading-relaxed">
+              कृपया पुन्हा प्रयत्न करा किंवा मुख्य पोर्टलवर परत जा.
+            </p>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                onClick={() => this.setState({ hasError: false, errorMessage: '' })}
+                className="px-4 py-2 rounded-full bg-[#064E36] text-white text-xs font-bold cursor-pointer"
+              >
+                पुन्हा प्रयत्न करा
+              </button>
+              <button
+                onClick={this.props.onReset}
+                className="px-4 py-2 rounded-full border border-stone-300 text-stone-700 text-xs font-bold cursor-pointer"
+              >
+                मुख्य पानावर जा
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function App() {
   const [currentView, setCurrentView] = useState<string>('home');
@@ -41,6 +92,9 @@ export default function App() {
 
   // Helper to check if currently authenticated as admin
   const isUserAuthenticated = (): boolean => {
+    if (isAuthorizedAdminUser(auth.currentUser)) {
+      return true;
+    }
     try {
       const raw = localStorage.getItem('seva_admin_session');
       if (raw) {
@@ -102,6 +156,7 @@ export default function App() {
   // Logout & Exit Admin
   const handleExitAdmin = () => {
     localStorage.removeItem('seva_admin_session');
+    signOutAdmin().catch(() => {});
     setIsAdmin(false);
     setCurrentView('home');
     window.location.hash = 'home';
@@ -109,7 +164,11 @@ export default function App() {
 
   // If in Admin Mode, render the complete Admin Console
   if (isAdmin) {
-    return <AdminLayout onExitAdmin={handleExitAdmin} />;
+    return (
+      <AdminErrorBoundary onReset={handleExitAdmin}>
+        <AdminLayout onExitAdmin={handleExitAdmin} />
+      </AdminErrorBoundary>
+    );
   }
 
   return (

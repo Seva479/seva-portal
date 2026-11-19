@@ -14,6 +14,16 @@ import {
   UserProfile,
 } from '../types';
 import { INITIAL_AGREEMENT } from '../data/budgetBreakup';
+import {
+  auth,
+  deleteApplicationFromFirestore,
+  deleteContactMessageFromFirestore,
+  isAuthorizedAdminUser,
+  saveApplicationToFirestore,
+  updateApplicationReviewInFirestore,
+  updateApplicationStatusInFirestore,
+  updateContactMessageStatusInFirestore,
+} from './firebase';
 
 // Default Organisation Settings
 export const DEFAULT_ORG_SETTINGS: OrganisationSettings = {
@@ -465,6 +475,17 @@ export class SevaStore {
     );
   }
 
+  static removeDeletedApplicationId(appId: string): void {
+    if (!appId) return;
+    const current = this.getDeletedApplicationIds();
+    if (current.delete(appId)) {
+      safeStorageSet(
+        STORAGE_KEYS.DELETED_APPLICATIONS,
+        JSON.stringify(Array.from(current))
+      );
+    }
+  }
+
   // Applications (Resilient loading ensures user-entered real organisations are NEVER lost, while genuinely deleted applications STAY deleted)
   static getApplications(): Application[] {
     const map = new Map<string, Application>();
@@ -587,23 +608,28 @@ export class SevaStore {
 
   static submitApplication(newAppData: Omit<Application, 'id' | 'created_at' | 'updated_at' | 'status' | 'priority' | 'status_history' | 'documents'> & { documents?: any[] }): Application {
     const list = this.getApplications();
-    
-    // Calculate next collision-free sequence number based on existing IDs
-    let maxNum = 0;
-    for (const a of list) {
-      if (a && a.id) {
-        const match = a.id.match(/SEVA-2026-(\d+)/);
-        if (match) {
-          const num = parseInt(match[1], 10);
-          if (!isNaN(num) && num > maxNum) {
-            maxNum = num;
-          }
-        }
+    const deletedIds = this.getDeletedApplicationIds();
+    const existingIds = new Set(list.map((a) => a.id));
+
+    // Generate a globally unique, collision-free ID that NEVER reuses deleted IDs or collides across devices
+    const nowDate = new Date();
+    const yyyy = nowDate.getFullYear();
+    const mm = String(nowDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(nowDate.getDate()).padStart(2, '0');
+    let formattedId = '';
+    for (let attempt = 0; attempt < 25; attempt++) {
+      const rand = String(Math.floor(1000 + Math.random() * 9000));
+      const candidate = `SEVA-${yyyy}-${mm}${dd}-${rand}`;
+      if (!existingIds.has(candidate) && !deletedIds.has(candidate)) {
+        formattedId = candidate;
+        break;
       }
     }
-    const nextSeq = Math.max(maxNum + 1, list.length + 1);
-    const formattedId = `SEVA-2026-${String(nextSeq).padStart(4, '0')}`;
-    const now = new Date().toISOString();
+    if (!formattedId) {
+      formattedId = `SEVA-${yyyy}-${Date.now().toString().slice(-6)}`;
+    }
+    this.removeDeletedApplicationId(formattedId);
+    const now = nowDate.toISOString();
 
     const application: Application = {
       ...newAppData,
@@ -686,7 +712,9 @@ export class SevaStore {
         }
       }
     }
-    const merged = Array.from(map.values());
+    const merged = Array.from(map.values()).sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
     safeStorageSet(STORAGE_KEYS.APPLICATIONS, JSON.stringify(merged));
     safeStorageSet('seva_applications', JSON.stringify(merged));
     return { mergedCount: merged.length, newCount };
@@ -694,13 +722,27 @@ export class SevaStore {
 
   static bulkImportApplications(importedList: Partial<Application>[]): { successCount: number; importedApps: Application[] } {
     const list = this.getApplications();
+    const deletedIds = this.getDeletedApplicationIds();
+    const usedIds = new Set<string>([...list.map((a) => a.id), ...Array.from(deletedIds)]);
     const now = new Date().toISOString();
+    const nowDate = new Date();
+    const year = nowDate.getFullYear();
+    const mm = String(nowDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(nowDate.getDate()).padStart(2, '0');
     let counter = list.length;
     const newApps: Application[] = [];
 
     for (const item of importedList) {
       counter += 1;
-      const formattedId = item.id && item.id.startsWith('SEVA-') ? item.id : `SEVA-2026-${String(counter).padStart(4, '0')}`;
+      let formattedId =
+        item.id && item.id.startsWith('SEVA-') && !usedIds.has(item.id)
+          ? item.id
+          : '';
+      while (!formattedId || usedIds.has(formattedId)) {
+        const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+        formattedId = `SEVA-${year}-${mm}${dd}-${rand}`;
+      }
+      usedIds.add(formattedId);
 
       const rawAreas = item.key_areas_of_work;
       const parsedAreas = Array.isArray(rawAreas)
@@ -789,6 +831,17 @@ export class SevaStore {
 
     const updatedList = [...newApps, ...list];
     this.save(STORAGE_KEYS.APPLICATIONS, updatedList);
+    safeStorageSet('seva_applications', JSON.stringify(updatedList));
+
+    // Mirror bulk imported apps to Firebase Firestore when Admin is authenticated
+    if (isAuthorizedAdminUser(auth.currentUser)) {
+      newApps.forEach((app) => {
+        saveApplicationToFirestore(app, true).catch((err) => {
+          console.warn('Firestore bulk import sync warning:', err);
+        });
+      });
+    }
+
     return { successCount: newApps.length, importedApps: newApps };
   }
 
@@ -824,6 +877,18 @@ export class SevaStore {
 
     list[index] = updatedApp;
     this.save(STORAGE_KEYS.APPLICATIONS, list);
+    safeStorageSet('seva_applications', JSON.stringify(list));
+
+    // Sync status update to Firebase Firestore when Admin is authenticated
+    updateApplicationStatusInFirestore(
+      appId,
+      updatedApp.status,
+      updatedApp.status_history,
+      updatedApp.updated_at
+    ).catch((err) => {
+      console.warn('Firestore status sync warning:', err);
+    });
+
     return updatedApp;
   }
 
@@ -893,7 +958,11 @@ export class SevaStore {
       // ignore
     }
 
-    // 5. If Supabase is configured, delete from remote Supabase table so sync never restores it
+    // 5. Delete from Firebase Firestore (and Supabase if configured) so cloud sync never restores it
+    deleteApplicationFromFirestore(appId).catch((err) => {
+      console.warn('Firestore remote delete warning:', err);
+    });
+
     try {
       import('./supabase')
         .then(({ getSupabaseClient, isSupabaseConfigured }) => {
@@ -942,6 +1011,18 @@ export class SevaStore {
 
     list[index] = updatedApp;
     this.save(STORAGE_KEYS.APPLICATIONS, list);
+    safeStorageSet('seva_applications', JSON.stringify(list));
+
+    // Sync review and priority to Firebase Firestore when Admin is authenticated
+    updateApplicationReviewInFirestore(
+      appId,
+      review,
+      updatedApp.priority,
+      updatedApp.updated_at
+    ).catch((err) => {
+      console.warn('Firestore review sync warning:', err);
+    });
+
     return updatedApp;
   }
 
@@ -1267,12 +1348,41 @@ export class SevaStore {
     const list = this.getContactMessages();
     const updated = list.map((m) => (m.id === id ? { ...m, status } : m));
     this.save(STORAGE_KEYS.CONTACT_MESSAGES, updated);
+    updateContactMessageStatusInFirestore(id, status).catch((err) => {
+      console.warn('Firestore contact status sync warning:', err);
+    });
   }
 
   static deleteContactMessage(id: string): void {
     const list = this.getContactMessages();
     const updated = list.filter((m) => m.id !== id);
     this.save(STORAGE_KEYS.CONTACT_MESSAGES, updated);
+    deleteContactMessageFromFirestore(id).catch((err) => {
+      console.warn('Firestore contact delete warning:', err);
+    });
+  }
+
+  static syncRemoteContactMessages(remoteMsgs: ContactMessage[]): { mergedCount: number; newCount: number } {
+    if (!remoteMsgs || !Array.isArray(remoteMsgs) || remoteMsgs.length === 0) {
+      return { mergedCount: 0, newCount: 0 };
+    }
+    const local = this.getContactMessages();
+    const map = new Map<string, ContactMessage>();
+    for (const msg of local) {
+      if (msg && msg.id) map.set(msg.id, msg);
+    }
+    let newCount = 0;
+    for (const rem of remoteMsgs) {
+      if (rem && rem.id) {
+        if (!map.has(rem.id)) newCount++;
+        map.set(rem.id, { ...map.get(rem.id), ...rem });
+      }
+    }
+    const merged = Array.from(map.values()).sort(
+      (a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime()
+    );
+    this.save(STORAGE_KEYS.CONTACT_MESSAGES, merged);
+    return { mergedCount: merged.length, newCount };
   }
 
   // Organisation Settings (Part 14)

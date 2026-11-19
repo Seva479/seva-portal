@@ -20,17 +20,20 @@ import { Application, ApplicationStatus, PriorityLevel } from '../../types';
 import { ExcelImportModal } from './ExcelImportModal';
 import { SevaStore } from '../../services/store';
 import { fetchRemoteApplications, isSupabaseConfigured } from '../../services/supabase';
+import { auth, fetchFirestoreApplications, isAuthorizedAdminUser } from '../../services/firebase';
 
 interface ApplicationsManagerProps {
   applications: Application[];
   onSelectApplication: (app: Application) => void;
   onRefresh?: () => void;
+  cloudConnected?: boolean;
 }
 
 export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
   applications,
   onSelectApplication,
   onRefresh,
+  cloudConnected,
 }) => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [appToDelete, setAppToDelete] = useState<Application | null>(null);
@@ -185,20 +188,35 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
-    if (isSupabaseConfigured()) {
+    let syncedFromCloud = false;
+    if (isAuthorizedAdminUser(auth.currentUser)) {
+      try {
+        const remote = await fetchFirestoreApplications();
+        SevaStore.syncRemoteApplications(remote);
+        syncedFromCloud = true;
+      } catch (e) {
+        console.warn('Manual Firestore sync failed:', e);
+      }
+    } else if (isSupabaseConfigured()) {
       try {
         const remote = await fetchRemoteApplications();
         if (remote && remote.length > 0) {
           SevaStore.syncRemoteApplications(remote);
+          syncedFromCloud = true;
         }
       } catch (e) {
         console.warn('Manual remote sync failed:', e);
       }
     }
     onRefresh?.();
+    const latestTotal = SevaStore.getApplications().length;
     setIsRefreshing(false);
-    setRefreshToast(`डेटा रिफ्रेश झाला! एकूण ${applications.length} अर्ज नोंदवलेले आहेत.`);
-    setTimeout(() => setRefreshToast(null), 3000);
+    setRefreshToast(
+      syncedFromCloud
+        ? `क्लाउड डेटा रिफ्रेश झाला! एकूण ${latestTotal} अर्ज उपलब्ध आहेत.`
+        : `लोकल डेटा रिफ्रेश झाला! एकूण ${latestTotal} अर्ज आहेत. (ऑनलाइन अर्ज पाहण्यासाठी वर Google क्लाउड लॉग इन करा.)`
+    );
+    setTimeout(() => setRefreshToast(null), 4000);
   };
 
   return (
@@ -229,6 +247,11 @@ export const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({
             <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-[#0B6643] text-xs font-bold border border-emerald-300">
               {applications.length} अर्ज
             </span>
+            {cloudConnected && (
+              <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold">
+                LIVE CLOUD
+              </span>
+            )}
           </div>
           <p className="text-xs text-stone-500">
             Manage, triage, score, and transition grassroots organisation submissions

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Mail,
   Phone,
@@ -19,14 +19,36 @@ import { SevaStore } from '../../services/store';
 import { ContactMessage } from '../../types';
 
 interface InquiriesManagerProps {
+  messages?: ContactMessage[];
   onRefresh?: () => void;
 }
 
-export const InquiriesManager: React.FC<InquiriesManagerProps> = ({ onRefresh }) => {
-  const [messages, setMessages] = useState<ContactMessage[]>(SevaStore.getContactMessages());
+export const InquiriesManager: React.FC<InquiriesManagerProps> = ({
+  messages: propMessages,
+  onRefresh,
+}) => {
+  const [messages, setMessages] = useState<ContactMessage[]>(
+    propMessages ?? SevaStore.getContactMessages()
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Unread' | 'Read' | 'Replied'>('All');
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
+
+  useEffect(() => {
+    if (propMessages) {
+      setMessages(propMessages);
+    }
+  }, [propMessages]);
+
+  useEffect(() => {
+    const syncList = () => setMessages(SevaStore.getContactMessages());
+    window.addEventListener('seva_store_updated', syncList);
+    window.addEventListener('storage', syncList);
+    return () => {
+      window.removeEventListener('seva_store_updated', syncList);
+      window.removeEventListener('storage', syncList);
+    };
+  }, []);
 
   const refreshMessages = () => {
     const list = SevaStore.getContactMessages();

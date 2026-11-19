@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { User } from 'firebase/auth';
 import {
   LayoutDashboard,
   FileText,
@@ -18,6 +19,12 @@ import {
   Download,
   Upload,
   RefreshCw,
+  Cloud,
+  CloudOff,
+  AlertCircle,
+  ExternalLink,
+  UploadCloud,
+  CheckCircle2,
 } from 'lucide-react';
 import { SevaStore, ADMIN_USERS } from '../../services/store';
 import { Application, UserProfile, Meeting, ProgrammeProject } from '../../types';
@@ -34,6 +41,16 @@ import { ContentManager } from './ContentManager';
 import { DatabaseSchemaModal } from './DatabaseSchemaModal';
 import { ExcelImportModal } from './ExcelImportModal';
 import { fetchRemoteApplications, isSupabaseConfigured } from '../../services/supabase';
+import {
+  auth,
+  fetchFirestoreApplications,
+  isAuthorizedAdminUser,
+  saveApplicationToFirestore,
+  signInAdminWithGoogle,
+  subscribeAuthState,
+  subscribeToFirestoreApplications,
+  subscribeToFirestoreContactMessages,
+} from '../../services/firebase';
 
 interface AdminLayoutProps {
   onExitAdmin: () => void;
@@ -56,11 +73,78 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onExitAdmin }) => {
   const [preselectedAppForEmail, setPreselectedAppForEmail] = useState<Application | null>(null);
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
 
+  // Firebase Cloud Auth & Live Sync state
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(auth.currentUser);
+  const [authReady, setAuthReady] = useState<boolean>(false);
+  const [cloudAuthLoading, setCloudAuthLoading] = useState<boolean>(false);
+  const [cloudError, setCloudError] = useState<string | null>(null);
+  const [cloudErrorCode, setCloudErrorCode] = useState<string | null>(null);
+  const [cloudAppIds, setCloudAppIds] = useState<Set<string> | null>(null);
+  const [syncingLocal, setSyncingLocal] = useState<boolean>(false);
+  const [cloudNotice, setCloudNotice] = useState<string | null>(null);
+  const [isRefreshingHeader, setIsRefreshingHeader] = useState<boolean>(false);
+
+  const cloudConnected = isAuthorizedAdminUser(firebaseUser);
+
   const refreshAll = () => {
     setApplications(SevaStore.getApplications());
     setProjects(SevaStore.getProjects());
     setMeetings(SevaStore.getMeetings());
     setContactMessages(SevaStore.getContactMessages());
+  };
+
+  const handleHeaderRefresh = async () => {
+    setIsRefreshingHeader(true);
+    try {
+      if (isAuthorizedAdminUser(auth.currentUser)) {
+        const remoteApps = await fetchFirestoreApplications();
+        setCloudAppIds(new Set(remoteApps.map((a) => a.id)));
+        SevaStore.syncRemoteApplications(remoteApps);
+      } else if (isSupabaseConfigured()) {
+        const remoteApps = await fetchRemoteApplications();
+        if (remoteApps && remoteApps.length > 0) {
+          SevaStore.syncRemoteApplications(remoteApps);
+        }
+      }
+    } catch (err) {
+      console.warn('Header refresh warning:', err);
+    } finally {
+      refreshAll();
+      setIsRefreshingHeader(false);
+    }
+  };
+
+  const handleConnectGoogleCloud = async () => {
+    setCloudError(null);
+    setCloudErrorCode(null);
+    setCloudAuthLoading(true);
+    const res = await signInAdminWithGoogle();
+    setCloudAuthLoading(false);
+    if (!res.success) {
+      setCloudErrorCode(res.errorCode || null);
+      setCloudError(res.errorMessage || 'Google क्लाउड लॉग इन करताना त्रुटी आली.');
+    } else {
+      setCloudNotice('क्लाउड डेटाबेस यशस्वीरीत्या जोडला गेला! सर्व नवीन अर्ज आता थेट येथे दिसतील.');
+      setTimeout(() => setCloudNotice(null), 5000);
+    }
+  };
+
+  const localOnlyApps =
+    cloudConnected && cloudAppIds !== null
+      ? applications.filter((a) => !cloudAppIds.has(a.id))
+      : [];
+
+  const handlePushLocalAppsToCloud = async () => {
+    if (!cloudConnected || localOnlyApps.length === 0) return;
+    setSyncingLocal(true);
+    let uploaded = 0;
+    for (const app of localOnlyApps) {
+      const res = await saveApplicationToFirestore(app, true);
+      if (res.success) uploaded += 1;
+    }
+    setSyncingLocal(false);
+    setCloudNotice(`${uploaded} लोकल अर्ज यशस्वीरीत्या क्लाउड डेटाबेसवर अपलोड झाले.`);
+    setTimeout(() => setCloudNotice(null), 5000);
   };
 
   const handleExportData = () => {
@@ -100,6 +184,54 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onExitAdmin }) => {
     e.target.value = '';
   };
 
+  // Subscribe to Firebase Auth readiness
+  React.useEffect(() => {
+    const unsub = subscribeAuthState((user) => {
+      setFirebaseUser(user);
+      setAuthReady(true);
+    });
+    return () => unsub();
+  }, []);
+
+  // Real-time Firestore live listeners (only attached AFTER auth is ready & admin verified)
+  React.useEffect(() => {
+    if (!authReady || !cloudConnected) {
+      setCloudAppIds(null);
+      return;
+    }
+
+    setCloudError(null);
+    const unsubApps = subscribeToFirestoreApplications(
+      (remoteApps) => {
+        setCloudAppIds(new Set(remoteApps.map((a) => a.id)));
+        SevaStore.syncRemoteApplications(remoteApps);
+        setApplications(SevaStore.getApplications());
+      },
+      (err) => {
+        console.error('Firestore live applications listener error:', err);
+        setCloudError('क्लाउड अर्जांचा लाईव्ह डेटा लोड करताना त्रुटी आली. कृपया पुन्हा Google लॉग इन करा किंवा रिफ्रेश दाबा.');
+      }
+    );
+
+    const unsubMessages = subscribeToFirestoreContactMessages(
+      (remoteMsgs) => {
+        SevaStore.syncRemoteContactMessages(remoteMsgs);
+        setContactMessages(SevaStore.getContactMessages());
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('seva_store_updated', { detail: { type: 'contact_sync' } }));
+        }
+      },
+      (err) => {
+        console.error('Firestore live contact listener error:', err);
+      }
+    );
+
+    return () => {
+      unsubApps();
+      unsubMessages();
+    };
+  }, [authReady, cloudConnected]);
+
   // Auto-refresh when applications are submitted in another tab, window, or on the portal
   React.useEffect(() => {
     const handleStoreChange = () => {
@@ -109,7 +241,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onExitAdmin }) => {
     window.addEventListener('storage', handleStoreChange);
     window.addEventListener('seva_store_updated', handleStoreChange);
 
-    // Initial check & auto-pull from Supabase if configured
+    // Optional legacy Supabase check if configured
     if (isSupabaseConfigured()) {
       fetchRemoteApplications()
         .then((remoteApps) => {
@@ -191,15 +323,39 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onExitAdmin }) => {
             </div>
           </div>
 
-          {/* Action Buttons: Export Data, Import Data, Logout */}
+          {/* Action Buttons: Cloud status, Refresh, Export Data, Import Data, Logout */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 text-xs">
+            {/* Cloud Status Pill */}
+            {authReady && (
+              cloudConnected ? (
+                <span
+                  className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 text-[11px] font-bold whitespace-nowrap"
+                  title={`Cloud Live: ${firebaseUser?.email}`}
+                >
+                  <Cloud className="w-3.5 h-3.5 text-emerald-300" />
+                  <span>Cloud Live</span>
+                </span>
+              ) : (
+                <button
+                  onClick={handleConnectGoogleCloud}
+                  disabled={cloudAuthLoading}
+                  className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-stone-950 text-[11px] font-extrabold whitespace-nowrap cursor-pointer transition-colors shadow-xs"
+                  title="क्लाउड डेटाबेस जोडण्यासाठी Google लॉग इन करा"
+                >
+                  <CloudOff className="w-3.5 h-3.5" />
+                  <span>{cloudAuthLoading ? 'जोडत आहे...' : 'क्लाउड जोडा'}</span>
+                </button>
+              )
+            )}
+
             {/* Quick Refresh */}
             <button
-              onClick={refreshAll}
-              className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-full bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 hover:text-white font-bold transition-all cursor-pointer border border-emerald-700/50 flex items-center gap-1.5 shadow-xs"
-              title="डेटा रिफ्रेश करा (Refresh Store)"
+              onClick={handleHeaderRefresh}
+              disabled={isRefreshingHeader}
+              className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-full bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 hover:text-white font-bold transition-all cursor-pointer border border-emerald-700/50 flex items-center gap-1.5 shadow-xs disabled:opacity-60"
+              title="क्लाउड व लोकल डेटा रिफ्रेश करा (Refresh Store)"
             >
-              <RefreshCw className="w-3.5 h-3.5 text-emerald-300" />
+              <RefreshCw className={`w-3.5 h-3.5 text-emerald-300 ${isRefreshingHeader ? 'animate-spin' : ''}`} />
               <span className="hidden lg:inline text-[11px]">रिफ्रेश</span>
             </button>
 
@@ -379,7 +535,102 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onExitAdmin }) => {
       </nav>
 
       {/* Main Admin Workspace Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex-1 w-full space-y-5">
+        {/* Cloud Notice Toast Banner */}
+        {cloudNotice && (
+          <div className="p-3.5 rounded-2xl bg-emerald-700 text-white text-xs sm:text-sm font-bold flex items-center justify-between gap-3 shadow-sm">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-200 shrink-0" />
+              <span>{cloudNotice}</span>
+            </div>
+            <button
+              onClick={() => setCloudNotice(null)}
+              className="text-emerald-100 hover:text-white cursor-pointer px-1"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {/* Cloud Auth Required Banner (shown when admin opened panel via local password instead of Google Auth) */}
+        {authReady && !cloudConnected && (
+          <div className="rounded-2xl bg-amber-50 border border-amber-300 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center shrink-0">
+                <CloudOff className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-extrabold text-amber-950">
+                  इतर संस्थांचे ऑनलाइन अर्ज लोड करण्यासाठी क्लाउड सिंक सक्रिय करा
+                </h3>
+                <p className="text-xs text-amber-900/90 leading-relaxed">
+                  तुम्ही सध्या ऑफलाईन/लोकल सेशनमध्ये आहात. Apply पेजवरून इतर मोबाईल किंवा कॉम्प्युटरवरून अपलोड केलेले सर्व अर्ज थेट येथे पाहण्यासाठी अधिकृत Google खात्याने (<strong>seva.ecology@gmail.com</strong>) लॉग इन करा.
+                </p>
+                {cloudError && (
+                  <div className="pt-1 text-xs font-bold text-red-700 flex flex-wrap items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{cloudError}</span>
+                    {cloudErrorCode === 'auth/unauthorized-domain' && (
+                      <a
+                        href="https://console.firebase.google.com/project/hybrid-passage-jfx4d/authentication/settings"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 underline text-[#064E36]"
+                      >
+                        <span>Authorized Domains उघडा</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={handleConnectGoogleCloud}
+              disabled={cloudAuthLoading}
+              className="px-5 py-2.5 rounded-full bg-[#064E36] hover:bg-[#043E2B] text-white text-xs sm:text-sm font-extrabold whitespace-nowrap cursor-pointer shadow-sm transition-all flex items-center justify-center gap-2 shrink-0 disabled:opacity-60"
+            >
+              <Cloud className="w-4 h-4 text-emerald-300" />
+              <span>{cloudAuthLoading ? 'लॉग इन सुरू आहे...' : 'Google ने क्लाउड अर्ज लोड करा'}</span>
+            </button>
+          </div>
+        )}
+
+        {/* Cloud Error Banner when already connected */}
+        {cloudConnected && cloudError && (
+          <div className="rounded-2xl bg-red-50 border border-red-200 p-4 text-xs sm:text-sm text-red-900 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 font-semibold">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+              <span>{cloudError}</span>
+            </div>
+            <button
+              onClick={handleHeaderRefresh}
+              className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold cursor-pointer"
+            >
+              पुन्हा प्रयत्न करा
+            </button>
+          </div>
+        )}
+
+        {/* Helpful strip if local-only applications exist that haven't been pushed to cloud yet */}
+        {cloudConnected && localOnlyApps.length > 0 && (
+          <div className="rounded-2xl bg-sky-50 border border-sky-200 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-sky-950">
+            <div className="flex items-center gap-2.5">
+              <UploadCloud className="w-4 h-4 text-sky-700 shrink-0" />
+              <span>
+                या ब्राउझरमध्ये <strong>{localOnlyApps.length}</strong> जुने/लोकल अर्ज आहेत जे अद्याप क्लाउडवर अपलोड झालेले नाहीत.
+              </span>
+            </div>
+            <button
+              onClick={handlePushLocalAppsToCloud}
+              disabled={syncingLocal}
+              className="px-4 py-1.5 rounded-full bg-sky-700 hover:bg-sky-800 text-white font-bold whitespace-nowrap cursor-pointer transition-colors disabled:opacity-60"
+            >
+              {syncingLocal ? 'अपलोड होत आहे...' : 'लोकल अर्ज क्लाउडवर सिंक करा'}
+            </button>
+          </div>
+        )}
+
         {activeTab === 'overview' && (
           <AdminOverview
             applications={applications}
@@ -396,6 +647,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onExitAdmin }) => {
             applications={applications}
             onSelectApplication={(app) => setSelectedApp(app)}
             onRefresh={refreshAll}
+            cloudConnected={cloudConnected}
           />
         )}
 
@@ -411,7 +663,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onExitAdmin }) => {
         )}
 
         {activeTab === 'inquiries' && (
-          <InquiriesManager onRefresh={refreshAll} />
+          <InquiriesManager messages={contactMessages} onRefresh={refreshAll} />
         )}
 
         {activeTab === 'meetings' && (

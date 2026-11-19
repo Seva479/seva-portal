@@ -21,8 +21,8 @@ import { Application } from '../types';
 import {
   insertApplicationToSupabase,
   isSupabaseConfigured,
-  SUPABASE_PROJECT_ID,
 } from '../services/supabase';
+import { saveApplicationToFirestore } from '../services/firebase';
 import {
   INDIAN_STATES_28,
   INDIAN_UNION_TERRITORIES_8,
@@ -249,10 +249,36 @@ export const ApplyPage: React.FC<ApplyPageProps> = ({ onNavigate }) => {
     }
   };
 
-  const [supabaseSyncResult, setSupabaseSyncResult] = useState<{
-    status: 'idle' | 'saving' | 'synced' | 'recorded_locally';
+  const [cloudSyncResult, setCloudSyncResult] = useState<{
+    status: 'idle' | 'saving' | 'synced' | 'error';
     message?: string;
   }>({ status: 'idle' });
+
+  const syncApplicationToCloud = async (app: Application) => {
+    setCloudSyncResult({
+      status: 'saving',
+      message: 'तुमचा अर्ज केंद्रीय क्लाउड डेटाबेसवर (SEVA Admin Console) पाठवत आहे...',
+    });
+
+    const fbRes = await saveApplicationToFirestore(app, false);
+
+    // Optional secondary mirror if Supabase key is configured
+    if (isSupabaseConfigured()) {
+      insertApplicationToSupabase(app).catch(() => {});
+    }
+
+    if (fbRes.success) {
+      setCloudSyncResult({
+        status: 'synced',
+        message: 'अर्ज केंद्रीय क्लाउड डेटाबेसमध्ये यशस्वीरीत्या सेव्ह झाला असून SEVA Admin Console वर तात्काळ उपलब्ध झाला आहे.',
+      });
+    } else {
+      setCloudSyncResult({
+        status: 'error',
+        message: 'इंटरनेट किंवा सर्व्हर कनेक्शनमुळे क्लाउड सिंक तात्पुरते थांबले. कृपया खालील "पुन्हा पाठवा" बटणावर क्लिक करा.',
+      });
+    }
+  };
 
   const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -263,7 +289,7 @@ export const ApplyPage: React.FC<ApplyPageProps> = ({ onNavigate }) => {
         ? customDistrict.trim()
         : formData.district;
 
-    // 1. Save in local database store immediately
+    // 1. Save in local store immediately with collision-free global ID
     const newApp = SevaStore.submitApplication({
       ...formData,
       district: finalDistrict,
@@ -274,26 +300,10 @@ export const ApplyPage: React.FC<ApplyPageProps> = ({ onNavigate }) => {
     });
 
     setSubmittedApp(newApp);
-    setSupabaseSyncResult({
-      status: 'recorded_locally',
-      message: 'तुमचा अर्ज SEVA प्रणालीमध्ये यशस्वीरीत्या नोंदवला गेला आहे आणि प्रशासकीय पडताळणीसाठी उपलब्ध आहे.',
-    });
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // 2. Transmit to user's connected Supabase backend if configured
-    if (isSupabaseConfigured()) {
-      try {
-        const res = await insertApplicationToSupabase(newApp);
-        if (res.success) {
-          setSupabaseSyncResult({
-            status: 'synced',
-            message: `अर्ज केंद्रीय क्लाउड डेटाबेसमध्ये (Supabase) यशस्वीरीत्या सुरक्षित केला गेला आहे.`,
-          });
-        }
-      } catch (err: any) {
-        // Keep status as recorded_locally - no jarring error to applicant
-      }
-    }
+    // 2. Transmit immediately to central Firebase Firestore cloud database
+    await syncApplicationToCloud(newApp);
   };
 
   const copyApplicationId = () => {
@@ -347,20 +357,73 @@ export const ApplyPage: React.FC<ApplyPageProps> = ({ onNavigate }) => {
             </p>
           </div>
 
-          {/* Clear Positive System Status Box (No technical errors shown to applicant) */}
-          <div className="p-4 rounded-xl border text-xs max-w-md mx-auto text-left space-y-1.5 bg-emerald-50/80 border-emerald-200/90 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-emerald-900 flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>सिस्टम स्टेटस (System Status)</span>
+          {/* Real-Time Cloud Sync Status Box */}
+          <div
+            className={`p-4 rounded-xl border text-xs max-w-md mx-auto text-left space-y-2 shadow-2xs ${
+              cloudSyncResult.status === 'error'
+                ? 'bg-red-50/90 border-red-200'
+                : cloudSyncResult.status === 'saving'
+                ? 'bg-blue-50/80 border-blue-200'
+                : 'bg-emerald-50/80 border-emerald-200/90'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span
+                className={`font-bold flex items-center gap-1.5 ${
+                  cloudSyncResult.status === 'error'
+                    ? 'text-red-900'
+                    : cloudSyncResult.status === 'saving'
+                    ? 'text-blue-900'
+                    : 'text-emerald-900'
+                }`}
+              >
+                <span
+                  className={`w-2.5 h-2.5 rounded-full ${
+                    cloudSyncResult.status === 'error'
+                      ? 'bg-red-500'
+                      : cloudSyncResult.status === 'saving'
+                      ? 'bg-blue-500 animate-ping'
+                      : 'bg-emerald-500'
+                  }`}
+                />
+                <span>सिस्टम स्टेटस (Cloud Sync)</span>
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                {supabaseSyncResult.status === 'synced' ? 'Cloud Synced' : 'नोंदणी यशस्वी (Recorded)'}
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                  cloudSyncResult.status === 'error'
+                    ? 'bg-red-100 text-red-800 border-red-300'
+                    : cloudSyncResult.status === 'saving'
+                    ? 'bg-blue-100 text-blue-800 border-blue-300'
+                    : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                }`}
+              >
+                {cloudSyncResult.status === 'synced'
+                  ? 'Cloud Synced ✓'
+                  : cloudSyncResult.status === 'saving'
+                  ? 'Saving to Cloud...'
+                  : 'Sync Pending'}
               </span>
             </div>
-            <p className="text-[11px] text-emerald-800 leading-relaxed font-medium">
-              {supabaseSyncResult.message || 'तुमचा अर्ज SEVA प्रणालीमध्ये सुरक्षित नोंदवला गेला असून प्रशासकीय पडताळणीसाठी उपलब्ध आहे.'}
+            <p
+              className={`text-[11px] leading-relaxed font-medium ${
+                cloudSyncResult.status === 'error'
+                  ? 'text-red-800'
+                  : cloudSyncResult.status === 'saving'
+                  ? 'text-blue-800'
+                  : 'text-emerald-800'
+              }`}
+            >
+              {cloudSyncResult.message}
             </p>
+            {cloudSyncResult.status === 'error' && submittedApp && (
+              <button
+                type="button"
+                onClick={() => syncApplicationToCloud(submittedApp)}
+                className="mt-1 px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold cursor-pointer"
+              >
+                क्लाउडवर पुन्हा पाठवा (Retry Sync)
+              </button>
+            )}
           </div>
 
           {/* Important Selection Notice */}

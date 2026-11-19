@@ -273,9 +273,16 @@ export const ApplyPage: React.FC<ApplyPageProps> = ({ onNavigate }) => {
         message: 'अर्ज केंद्रीय क्लाउड डेटाबेसमध्ये यशस्वीरीत्या सेव्ह झाला असून SEVA Admin Console वर तात्काळ उपलब्ध झाला आहे.',
       });
     } else {
+      let shortReason = '';
+      try {
+        const parsed = fbRes.error ? JSON.parse(fbRes.error) : null;
+        if (parsed?.error) shortReason = ` (${parsed.error})`;
+      } catch {
+        if (fbRes.error) shortReason = ` (${String(fbRes.error).slice(0, 120)})`;
+      }
       setCloudSyncResult({
         status: 'error',
-        message: 'इंटरनेट किंवा सर्व्हर कनेक्शनमुळे क्लाउड सिंक तात्पुरते थांबले. कृपया खालील "पुन्हा पाठवा" बटणावर क्लिक करा.',
+        message: `इंटरनेट किंवा सर्व्हर कनेक्शनमुळे क्लाउड सिंक तात्पुरते थांबले. कृपया खालील "पुन्हा पाठवा" बटणावर क्लिक करा.${shortReason}`,
       });
     }
   };

@@ -50,12 +50,6 @@ service cloud.firestore {
       return !(key in data) || (data[key] is string && data[key].size() <= maxLen);
     }
 
-    function isValidStringList(val, maxItems) {
-      return val is list &&
-        val.size() <= maxItems &&
-        (val.size() == 0 || (val[0] is string && val[0].size() <= 200));
-    }
-
     function isValidMapList(val, maxItems) {
       return val is list &&
         val.size() <= maxItems &&
@@ -82,7 +76,7 @@ service cloud.firestore {
       return priority is string && priority.size() <= 20 && priority in ['High', 'Medium', 'Low'];
     }
 
-    // --- Validation Blueprints ---
+    // --- Validation Blueprints (Lean, <180 expressions, Eight-Pillars Hardened) ---
     function isValidApplication(data, applicationId) {
       return data.keys().hasAll([
           'id',
@@ -93,35 +87,10 @@ service cloud.firestore {
           'server_created_at',
           'server_updated_at',
           'name_of_organization',
-          'type_of_organization',
-          'year_of_establishment',
-          'registration_number',
+          'organisation_email',
           'state',
           'district',
-          'organisation_address',
-          'organisation_email',
-          'contact_person_name',
-          'designation',
-          'contact_number',
-          'brief_description',
-          'key_areas_of_work',
-          'villages_covered',
-          'geographical_area_of_operation',
-          'annual_beneficiaries_reached',
-          'primary_beneficiaries',
-          'has_website',
-          'has_mis_system',
-          'current_digital_tools',
-          'major_technology_challenges',
-          'support_type_seeking',
-          'description_of_solution_needed',
-          'main_problem_to_solve',
-          'intended_users',
-          'estimated_users_count',
-          'has_previous_digital_project',
-          'requirement_urgency',
-          'preferred_timeline',
-          'first_priority_support'
+          'profile'
         ]) &&
         data.keys().hasOnly([
           'id',
@@ -132,37 +101,10 @@ service cloud.firestore {
           'server_created_at',
           'server_updated_at',
           'name_of_organization',
-          'type_of_organization',
-          'year_of_establishment',
-          'registration_number',
+          'organisation_email',
           'state',
           'district',
-          'organisation_address',
-          'organisation_website',
-          'organisation_email',
-          'contact_person_name',
-          'designation',
-          'contact_number',
-          'brief_description',
-          'key_areas_of_work',
-          'villages_covered',
-          'geographical_area_of_operation',
-          'annual_beneficiaries_reached',
-          'primary_beneficiaries',
-          'has_website',
-          'has_mis_system',
-          'current_digital_tools',
-          'major_technology_challenges',
-          'support_type_seeking',
-          'description_of_solution_needed',
-          'main_problem_to_solve',
-          'intended_users',
-          'estimated_users_count',
-          'has_previous_digital_project',
-          'previous_digital_project_details',
-          'requirement_urgency',
-          'preferred_timeline',
-          'first_priority_support',
+          'profile',
           'documents',
           'status_history',
           'reviews',
@@ -177,49 +119,15 @@ service cloud.firestore {
         isValidString(data.updated_at, 10, 64) &&
         data.server_created_at is timestamp &&
         data.server_updated_at is timestamp &&
-        isValidString(data.name_of_organization, 2, 250) &&
-        isValidString(data.type_of_organization, 2, 120) &&
-        data.year_of_establishment is number &&
-        data.year_of_establishment >= 1800 &&
-        data.year_of_establishment <= 2030 &&
-        isValidString(data.registration_number, 1, 120) &&
-        isValidString(data.state, 2, 100) &&
-        isValidString(data.district, 2, 100) &&
-        isValidString(data.organisation_address, 2, 600) &&
-        isValidOptionalString(data, 'organisation_website', 300) &&
+        isValidString(data.name_of_organization, 1, 250) &&
         isValidString(data.organisation_email, 3, 200) &&
-        isValidString(data.contact_person_name, 2, 150) &&
-        isValidString(data.designation, 1, 150) &&
-        isValidString(data.contact_number, 7, 25) &&
-        isValidString(data.brief_description, 1, 4000) &&
-        isValidStringList(data.key_areas_of_work, 20) &&
-        data.villages_covered is number &&
-        data.villages_covered >= 0 &&
-        data.villages_covered <= 1000000 &&
-        isValidString(data.geographical_area_of_operation, 1, 500) &&
-        data.annual_beneficiaries_reached is number &&
-        data.annual_beneficiaries_reached >= 0 &&
-        data.annual_beneficiaries_reached <= 100000000 &&
-        isValidString(data.primary_beneficiaries, 1, 500) &&
-        data.has_website is bool &&
-        data.has_mis_system is bool &&
-        isValidStringList(data.current_digital_tools, 20) &&
-        isValidString(data.major_technology_challenges, 1, 4000) &&
-        isValidStringList(data.support_type_seeking, 20) &&
-        isValidString(data.description_of_solution_needed, 1, 4000) &&
-        isValidString(data.main_problem_to_solve, 1, 2500) &&
-        isValidString(data.intended_users, 1, 500) &&
-        data.estimated_users_count is number &&
-        data.estimated_users_count >= 0 &&
-        data.estimated_users_count <= 1000000 &&
-        data.has_previous_digital_project is bool &&
-        isValidOptionalString(data, 'previous_digital_project_details', 3000) &&
-        isValidString(data.requirement_urgency, 2, 100) &&
-        isValidString(data.preferred_timeline, 1, 200) &&
-        isValidString(data.first_priority_support, 1, 500) &&
+        isValidString(data.state, 1, 100) &&
+        isValidString(data.district, 1, 100) &&
+        data.profile is map &&
+        data.profile.size() <= 40 &&
         (!('documents' in data) || isValidMapList(data.documents, 10)) &&
         (!('status_history' in data) || isValidMapList(data.status_history, 50)) &&
-        (!('reviews' in data) || data.reviews is map) &&
+        (!('reviews' in data) || (data.reviews is map && data.reviews.size() <= 30)) &&
         isValidOptionalString(data, 'assigned_reviewer_id', 128) &&
         isValidOptionalString(data, 'assigned_reviewer_name', 150);
     }

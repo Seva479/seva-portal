@@ -14,6 +14,7 @@ import {
   getDocFromServer,
   getDocs,
   getFirestore,
+  initializeFirestore,
   onSnapshot,
   orderBy,
   query,
@@ -21,12 +22,23 @@ import {
   setDoc,
   updateDoc,
   Unsubscribe,
+  Firestore,
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { Application, ApplicationReview, ContactMessage } from '../types';
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+let firestoreInstance: Firestore;
+try {
+  firestoreInstance = initializeFirestore(
+    app,
+    { experimentalAutoDetectLongPolling: true },
+    firebaseConfig.firestoreDatabaseId
+  );
+} catch {
+  firestoreInstance = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+}
+export const db = firestoreInstance;
 export const auth = getAuth(app);
 
 export const AUTHORIZED_ADMIN_EMAILS = [
@@ -185,9 +197,9 @@ export function subscribeAuthState(callback: (user: User | null) => void): Unsub
 
 // --- Defensive Payload Sanitizers (Synchronized with firebase-blueprint.json & firestore.rules) ---
 
-function clampString(val: unknown, maxLen: number, fallback = ''): string {
+function clampString(val: unknown, maxLen: number, fallback = '', minLen = 0): string {
   const str = typeof val === 'string' ? val.trim() : String(val ?? fallback).trim();
-  const safe = str.length > 0 ? str : fallback;
+  const safe = str.length >= Math.max(1, minLen) ? str : fallback;
   return safe.slice(0, maxLen);
 }
 
@@ -206,7 +218,7 @@ function clampNumber(val: unknown, min: number, max: number, fallback: number): 
 }
 
 function buildSafeApplicationPayload(app: Application, allowAdminFields = false): Record<string, any> {
-  const safeId = clampString(app.id, 128).replace(/[^a-zA-Z0-9_-]/g, '-');
+  const safeId = clampString(app.id, 128, `SEVA-${Date.now()}`, 3).replace(/[^a-zA-Z0-9_-]/g, '-');
   const nowIso = new Date().toISOString();
 
   const safeDocuments = Array.isArray(app.documents)
@@ -225,66 +237,61 @@ function buildSafeApplicationPayload(app: Application, allowAdminFields = false)
         previous_status: clampString(h?.previous_status, 60, 'None'),
         new_status: clampString(h?.new_status, 60, 'New Application'),
         changed_by: clampString(h?.changed_by, 150, 'Public Applicant Portal'),
-        changed_at: clampString(h?.changed_at, 64, nowIso),
+        changed_at: clampString(h?.changed_at, 64, nowIso, 10),
         internal_remarks: clampString(h?.internal_remarks, 500, ''),
       }))
     : [];
 
-  const payload: Record<string, any> = {
-    id: safeId,
-    status: allowAdminFields ? clampString(app.status, 60, 'New Application') : 'New Application',
-    priority: allowAdminFields ? clampString(app.priority, 20, 'Medium') : 'Medium',
-    created_at: clampString(app.created_at, 64, nowIso),
-    updated_at: clampString(app.updated_at, 64, nowIso),
-    server_created_at: serverTimestamp(),
-    server_updated_at: serverTimestamp(),
-
-    // Section A
-    name_of_organization: clampString(app.name_of_organization, 250, 'Unnamed Organisation'),
-    type_of_organization: clampString(app.type_of_organization, 120, 'Society'),
+  const profile: Record<string, any> = {
+    type_of_organization: clampString(app.type_of_organization, 120, 'Society', 1),
     year_of_establishment: clampNumber(app.year_of_establishment, 1800, 2030, 2020),
-    registration_number: clampString(app.registration_number, 120, 'N/A'),
-    state: clampString(app.state, 100, 'Maharashtra'),
-    district: clampString(app.district, 100, 'Yavatmal'),
-    organisation_address: clampString(app.organisation_address, 600, 'Address not provided'),
+    registration_number: clampString(app.registration_number, 120, 'N/A', 1),
+    organisation_address: clampString(app.organisation_address, 600, 'Address not provided', 1),
     organisation_website: clampString(app.organisation_website, 300, ''),
-    organisation_email: clampString(app.organisation_email, 200, 'no-email@example.org'),
 
-    // Section B
-    contact_person_name: clampString(app.contact_person_name, 150, 'Applicant'),
-    designation: clampString(app.designation, 150, 'Representative'),
-    contact_number: clampString(app.contact_number, 25, '0000000000'),
+    contact_person_name: clampString(app.contact_person_name, 150, 'Applicant', 1),
+    designation: clampString(app.designation, 150, 'Representative', 1),
+    contact_number: clampString(app.contact_number, 25, '0000000000', 1),
 
-    // Section C
-    brief_description: clampString(app.brief_description, 4000, 'Not specified'),
+    brief_description: clampString(app.brief_description, 4000, 'Not specified', 1),
     key_areas_of_work: clampStringList(app.key_areas_of_work, 20),
     villages_covered: clampNumber(app.villages_covered, 0, 1000000, 0),
-    geographical_area_of_operation: clampString(app.geographical_area_of_operation, 500, 'Not specified'),
+    geographical_area_of_operation: clampString(app.geographical_area_of_operation, 500, 'Not specified', 1),
     annual_beneficiaries_reached: clampNumber(app.annual_beneficiaries_reached, 0, 100000000, 0),
-    primary_beneficiaries: clampString(app.primary_beneficiaries, 500, 'Rural Communities'),
+    primary_beneficiaries: clampString(app.primary_beneficiaries, 500, 'Rural Communities', 1),
 
-    // Section D
     has_website: Boolean(app.has_website),
     has_mis_system: Boolean(app.has_mis_system),
     current_digital_tools: clampStringList(app.current_digital_tools, 20),
 
-    // Section E
-    major_technology_challenges: clampString(app.major_technology_challenges, 4000, 'Not specified'),
+    major_technology_challenges: clampString(app.major_technology_challenges, 4000, 'Not specified', 1),
     support_type_seeking: clampStringList(app.support_type_seeking, 20),
-    description_of_solution_needed: clampString(app.description_of_solution_needed, 4000, 'Not specified'),
-    main_problem_to_solve: clampString(app.main_problem_to_solve, 2500, 'Not specified'),
-    intended_users: clampString(app.intended_users, 500, 'Staff'),
+    description_of_solution_needed: clampString(app.description_of_solution_needed, 4000, 'Not specified', 1),
+    main_problem_to_solve: clampString(app.main_problem_to_solve, 2500, 'Not specified', 1),
+    intended_users: clampString(app.intended_users, 500, 'Staff', 1),
     estimated_users_count: clampNumber(app.estimated_users_count, 0, 1000000, 1),
 
-    // Section F
     has_previous_digital_project: Boolean(app.has_previous_digital_project),
     previous_digital_project_details: clampString(app.previous_digital_project_details, 3000, ''),
 
-    // Section G
-    requirement_urgency: clampString(app.requirement_urgency, 100, 'Moderate (1-3 months)'),
-    preferred_timeline: clampString(app.preferred_timeline, 200, '3 to 4 months'),
-    first_priority_support: clampString(app.first_priority_support, 500, 'Technology Support'),
+    requirement_urgency: clampString(app.requirement_urgency, 100, 'Moderate (1-3 months)', 1),
+    preferred_timeline: clampString(app.preferred_timeline, 200, '3 to 4 months', 1),
+    first_priority_support: clampString(app.first_priority_support, 500, 'Technology Support', 1),
+  };
 
+  const payload: Record<string, any> = {
+    id: safeId,
+    status: allowAdminFields ? clampString(app.status, 60, 'New Application', 1) : 'New Application',
+    priority: allowAdminFields ? clampString(app.priority, 20, 'Medium', 1) : 'Medium',
+    created_at: clampString(app.created_at, 64, nowIso, 10),
+    updated_at: clampString(app.updated_at, 64, nowIso, 10),
+    server_created_at: serverTimestamp(),
+    server_updated_at: serverTimestamp(),
+    name_of_organization: clampString(app.name_of_organization, 250, 'Unnamed Organisation', 1),
+    organisation_email: clampString(app.organisation_email, 200, 'no-email@example.org', 3),
+    state: clampString(app.state, 100, 'Maharashtra', 1),
+    district: clampString(app.district, 100, 'Yavatmal', 1),
+    profile,
     documents: safeDocuments,
     status_history: safeStatusHistory,
   };
@@ -304,7 +311,13 @@ function buildSafeApplicationPayload(app: Application, allowAdminFields = false)
   return payload;
 }
 
-function docToApplication(raw: Record<string, any>): Application {
+function docToApplication(rawDoc: Record<string, any>): Application {
+  // Support both compact envelope ({ profile: {...}, ... }) and legacy flat documents
+  const raw: Record<string, any> = {
+    ...(rawDoc.profile && typeof rawDoc.profile === 'object' ? rawDoc.profile : {}),
+    ...rawDoc,
+  };
+
   return {
     id: String(raw.id || ''),
     created_at: typeof raw.created_at === 'string' ? raw.created_at : new Date().toISOString(),
